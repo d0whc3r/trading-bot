@@ -15,9 +15,9 @@ export abstract class BaseApi {
 
   public abstract getPrice(ticker: string): Promise<number | undefined>;
 
-  protected abstract getAmountDecimals(ticker: string): number;
+  protected abstract getAmountDecimals(ticker: string): Promise<number>;
 
-  protected abstract getPriceDecimals(ticker: string): number;
+  protected abstract getPriceDecimals(ticker: string): Promise<number>;
 
   protected async genericActions({ ticker, usdt = Config.BINANCE_AMOUNT_BET }: FutureAction) {
     const name = this.cleanTicker(ticker);
@@ -34,7 +34,7 @@ export abstract class BaseApi {
     if (!price) {
       return null;
     }
-    const decimals = this.getAmountDecimals(ticker);
+    const decimals = await this.getAmountDecimals(ticker);
     const amount = Math.floor((usdt / price) * 10 ** decimals) / 10 ** decimals;
     return { amount, price };
   }

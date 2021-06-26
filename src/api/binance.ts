@@ -29,6 +29,14 @@ export class Binance extends BaseApi {
     return new Binance();
   }
 
+  private async getExchangeInfo() {
+    if (this.exchangeInfo) {
+      return this.exchangeInfo;
+    } else {
+      return await this.exchange.exchangeInfo();
+    }
+  }
+
   protected async setFutureConfig(ticker: string) {
     try {
       const result = await this.exchange.futuresLeverage({ symbol: ticker, leverage: Config.BINANCE_LEVERAGE });
@@ -61,22 +69,30 @@ export class Binance extends BaseApi {
     return await this.exchange.futuresAccountBalance();
   }
 
-  protected getAmountDecimals(ticker: string) {
-    const info = this.exchangeInfo?.symbols.find((s) => s.symbol === ticker);
+  protected async getAmountDecimals(ticker: string) {
+    const info = (await this.getExchangeInfo()).symbols.find((s) => s.symbol === ticker);
     let decimals = 0;
     if (info) {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      decimals = +(info as any).quantityPrecision;
+      const pFilter = info.filters.find((f) => f.filterType === 'LOT_SIZE');
+      if (pFilter) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access,@typescript-eslint/no-unsafe-assignment
+        decimals = (pFilter as any).stepSize.split('1')[0]?.split('.')[1]?.length || 0;
+      }
     }
     return decimals;
   }
 
-  protected getPriceDecimals(ticker: string) {
-    const info = this.exchangeInfo?.symbols.find((s) => s.symbol === ticker);
+  protected async getPriceDecimals(ticker: string) {
+    const info = (await this.getExchangeInfo()).symbols.find((s) => s.symbol === ticker);
     let decimals = 0;
     if (info) {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      decimals = +(info as any).pricePrecision;
+      const pFilter = info.filters.find((f) => f.filterType === 'PRICE_FILTER');
+      if (pFilter) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access,@typescript-eslint/no-unsafe-assignment
+        decimals = (pFilter as any).tickSize.split('1')[0]?.split('.')[1]?.length || 0;
+      }
     }
     return decimals;
   }
@@ -96,7 +112,7 @@ export class Binance extends BaseApi {
     const isStop = type === 'stop';
     const calc = isStop ? Config.BINANCE_STOP_LOSS : Config.BINANCE_TAKE_PROFIT;
     const diff = (realPrice * calc) / Config.BINANCE_LEVERAGE / 100;
-    const priceDecimals = this.getPriceDecimals(ticker);
+    const priceDecimals = await this.getPriceDecimals(ticker);
     const prices = [realPrice - diff, realPrice + diff].map((p) => Math.floor(p * 10 ** priceDecimals) / 10 ** priceDecimals);
     const first = isStop ? 0 : 1;
     const second = isStop ? 1 : 0;
