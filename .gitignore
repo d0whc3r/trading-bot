@@ -56,3 +56,4 @@ typings/
 .scannerwork
 
 content/model.json
+content/strategy*
