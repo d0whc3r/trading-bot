@@ -1,10 +1,8 @@
+import type { Order } from 'binance-api-node';
 import { Config } from '../config';
 import type { FutureAction, FuturePosition } from '../types/api';
 
 export abstract class BaseApi {
-  protected constructor() {
-  }
-
   protected cleanTicker(name: string) {
     return name.toUpperCase().replace(/PERP$/, '');
   }
@@ -36,8 +34,8 @@ export abstract class BaseApi {
     if (!price) {
       return null;
     }
-    const decimals = await this.getAmountDecimals(ticker);
-    const amount = Math.floor(usdt / price * decimals) / decimals;
+    const decimals = this.getAmountDecimals(ticker);
+    const amount = Math.floor((usdt / price) * decimals) / decimals;
     return { amount, price };
   }
 
@@ -45,7 +43,7 @@ export abstract class BaseApi {
 
   public abstract short(action: FutureAction): Promise<null | any>;
 
-  public abstract close(ticker: string, prev?: FuturePosition): Promise<void>;
+  public abstract close(ticker: string, prev?: FuturePosition): Promise<boolean | null | undefined | Order>;
 
   protected positiveAmount(amount: number) {
     let result = amount;

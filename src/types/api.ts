@@ -2,13 +2,13 @@ export type FutureAction = {
   ticker: string;
   price?: number;
   usdt?: number;
-}
+};
 
 export type FuturePosition = 'long' | 'short';
 
 export type LastAction<A> = {
   [ticker: string]: A;
-}
+};
 
 export interface QuoteResult {
   symbol: string;

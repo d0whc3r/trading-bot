@@ -8,15 +8,16 @@ function correctPrice(price: string) {
   return +(+price).toFixed(6);
 }
 
+// eslint-disable-next-line max-params
 function atBinance(ticker: string, action: Strategy['market_position'], price: string, prev?: Strategy['prev_market_position']) {
   const validPrice = correctPrice(price);
   logger.info(`BINANCE: ${action} - ${ticker} - ${validPrice}`);
   switch (action) {
     case 'long':
-      Binance.instance.close(ticker, 'short');
+      void Binance.instance.close(ticker, 'short');
       return Binance.instance.long({ ticker, price: validPrice, usdt: Config.BINANCE_AMOUNT_BET });
     case 'short':
-      Binance.instance.close(ticker, 'long');
+      void Binance.instance.close(ticker, 'long');
       return Binance.instance.short({ ticker, price: validPrice, usdt: Config.BINANCE_AMOUNT_BET });
     case 'flat':
       return Binance.instance.close(ticker, prev as FuturePosition);
@@ -24,11 +25,12 @@ function atBinance(ticker: string, action: Strategy['market_position'], price: s
 }
 
 export function parsePetition({ ticker, exchange, strategy: { market_position, order_price, prev_market_position } }: ParsedSignalModel) {
+  // eslint-disable-next-line sonarjs/no-small-switch
   switch (exchange) {
     case 'BINANCE':
       return atBinance(ticker, market_position, order_price, prev_market_position);
     default:
   }
-  console.log('[!] Error, unknown exchange', exchange, ticker, market_position, order_price);
+  logger.warn({ title: '[!] Error, unknown exchange', exchange, ticker, market_position, order_price });
   return null;
 }

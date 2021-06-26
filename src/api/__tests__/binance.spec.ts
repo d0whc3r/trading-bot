@@ -28,4 +28,3 @@ describe('Binance api', () => {
     expect(result).not.toBeFalsy();
   });
 });
-

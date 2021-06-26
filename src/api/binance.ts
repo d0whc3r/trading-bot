@@ -16,8 +16,8 @@ export class Binance extends BaseApi {
       apiKey: Config.BINANCE_APIKEY,
       apiSecret: Config.BINANCE_SECRETKEY
     });
-    this.exchange.futuresPositionMode({ dualSidePosition: true } as any);
-    this.exchange.exchangeInfo().then((result) => {
+    void this.exchange.futuresPositionMode({ dualSidePosition: true } as any);
+    void this.exchange.exchangeInfo().then((result) => {
       this.exchangeInfo = result;
     });
   }
@@ -50,7 +50,7 @@ export class Binance extends BaseApi {
 
   public async getPrice(ticker: string) {
     const prices = await this.getPrices();
-    const price = prices[ticker];
+    const price = prices[ticker.toString()];
     if (!price || !Object.prototype.hasOwnProperty.call(prices, ticker)) {
       return undefined;
     }
@@ -74,11 +74,13 @@ export class Binance extends BaseApi {
     const info = this.exchangeInfo?.symbols.find((s) => s.symbol === ticker);
     let decimals = 0;
     if (info) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       decimals = +(info as any).pricePrecision;
     }
     return decimals;
   }
 
+  // eslint-disable-next-line max-params
   private async calculateLimit(ticker: string, action: FuturePosition, type: 'stop' | 'profit', price?: number) {
     if ((type === 'stop' && !Config.BINANCE_STOP_LOSS) || (type === 'profit' && !Config.BINANCE_TAKE_PROFIT)) {
       return null;
@@ -92,12 +94,12 @@ export class Binance extends BaseApi {
     }
     const isStop = type === 'stop';
     const calc = isStop ? Config.BINANCE_STOP_LOSS : Config.BINANCE_TAKE_PROFIT;
-    const diff = realPrice * calc / Config.BINANCE_LEVERAGE / 100;
+    const diff = (realPrice * calc) / Config.BINANCE_LEVERAGE / 100;
     const priceDecimals = this.getPriceDecimals(ticker);
     const prices = [realPrice - diff, realPrice + diff].map((p) => Math.floor(p * priceDecimals) / priceDecimals);
     const first = isStop ? 0 : 1;
     const second = isStop ? 1 : 0;
-    const result = action === 'long' ? prices[first] : prices[second];
+    const result = action === 'long' ? prices[+first] : prices[+second];
     return result.toString();
   }
 
@@ -153,6 +155,7 @@ export class Binance extends BaseApi {
       }
       logger.debug({ title: 'LONG RESULT ACTION', result });
     } catch (error) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment,@typescript-eslint/no-unsafe-member-access
       logger.error({ title: 'ERROR in open LONG', msg: error.message, error });
     }
     return result;
@@ -210,6 +213,7 @@ export class Binance extends BaseApi {
       }
       logger.debug({ title: 'SHORT RESULT ACTION', result });
     } catch (error) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       logger.error({ title: 'ERROR in open SHORT', error });
     }
     return result;
@@ -218,6 +222,7 @@ export class Binance extends BaseApi {
   public async closeOpenOrders(ticker: string, prev: FuturePosition) {
     const symbol = this.cleanTicker(ticker);
     const orders = await this.exchange.futuresOpenOrders({ symbol });
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access,@typescript-eslint/no-unsafe-call
     const order = orders.filter((o: any) => o.positionSide && o.positionSide.toLowerCase() === prev.toLowerCase());
     if (order?.length) {
       logger.debug({ title: `Close ${order.length} open order/s`, symbol, position: prev });
@@ -225,7 +230,7 @@ export class Binance extends BaseApi {
         return true;
       }
       for (let i = 0; i < order.length; i++) {
-        const o = order[i];
+        const o = order[+i];
         await this.exchange.futuresCancelOrder({ symbol: o.symbol, orderId: o.orderId });
       }
       return true;
@@ -256,7 +261,7 @@ export class Binance extends BaseApi {
     if (Config.BINANCE_DEMO) {
       return null;
     }
-    let order: any;
+    let order: Order;
     switch (side) {
       case 'BUY': {
         order = await this.exchange.futuresOrder({
@@ -283,10 +288,6 @@ export class Binance extends BaseApi {
       }
       default:
         return;
-    }
-    if (Object.prototype.hasOwnProperty.call(order, 'code') && 'code' in order && order.code < 0) {
-      logger.error({ title: '[-] Close position ERROR', symbol, order });
-      return null;
     }
     logger.info(`[!] Closed position for ${symbol}`);
     logger.debug({ title: 'CLOSED ORDER FOR', symbol, order });
