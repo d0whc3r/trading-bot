@@ -65,7 +65,8 @@ export class Binance extends BaseApi {
     const info = this.exchangeInfo?.symbols.find((s) => s.symbol === ticker);
     let decimals = 0;
     if (info) {
-      decimals = +info.quoteAssetPrecision;
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      decimals = +(info as any).quantityPrecision;
     }
     return decimals;
   }
@@ -96,7 +97,7 @@ export class Binance extends BaseApi {
     const calc = isStop ? Config.BINANCE_STOP_LOSS : Config.BINANCE_TAKE_PROFIT;
     const diff = (realPrice * calc) / Config.BINANCE_LEVERAGE / 100;
     const priceDecimals = this.getPriceDecimals(ticker);
-    const prices = [realPrice - diff, realPrice + diff].map((p) => Math.floor(p * priceDecimals) / priceDecimals);
+    const prices = [realPrice - diff, realPrice + diff].map((p) => Math.floor(p * 10 ** priceDecimals) / 10 ** priceDecimals);
     const first = isStop ? 0 : 1;
     const second = isStop ? 1 : 0;
     const result = action === 'long' ? prices[+first] : prices[+second];

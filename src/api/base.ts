@@ -35,7 +35,7 @@ export abstract class BaseApi {
       return null;
     }
     const decimals = this.getAmountDecimals(ticker);
-    const amount = Math.floor((usdt / price) * decimals) / decimals;
+    const amount = Math.floor((usdt / price) * 10 ** decimals) / 10 ** decimals;
     return { amount, price };
   }
 
