@@ -18,4 +18,5 @@ export class Config {
   public static BINANCE_MARGIN_TYPE = process.env.BINANCE_MARGIN_TYPE || 'ISOLATED';
   public static BINANCE_STOP_LOSS = +(process.env.BINANCE_STOP_LOSS || 0);
   public static BINANCE_TAKE_PROFIT = +(process.env.BINANCE_TAKE_PROFIT || 0);
+  public static BINANCE_FOMO = +parseBool(process.env.BINANCE_FOMO || false);
 }

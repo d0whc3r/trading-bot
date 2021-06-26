@@ -1,7 +1,7 @@
 import { Binance } from './api/binance';
 import { Config } from './config';
 import { logger } from './logger';
-import type { FuturePosition } from './types/api';
+import type { FutureAction, FuturePosition } from './types/api';
 import type { ParsedSignalModel, Strategy } from './types/signalModel';
 
 function correctPrice(price: string) {
@@ -13,12 +13,22 @@ function atBinance(ticker: string, action: Strategy['market_position'], price: s
   const validPrice = correctPrice(price);
   logger.info(`BINANCE: ${action} - ${ticker} - ${validPrice}`);
   switch (action) {
-    case 'long':
-      void Binance.instance.close(ticker, 'short');
-      return Binance.instance.long({ ticker, usdt: Config.BINANCE_AMOUNT_BET });
-    case 'short':
-      void Binance.instance.close(ticker, 'long');
-      return Binance.instance.short({ ticker, usdt: Config.BINANCE_AMOUNT_BET });
+    case 'long': {
+      // void Binance.instance.close(ticker, 'short');
+      const options: FutureAction = { ticker, usdt: Config.BINANCE_AMOUNT_BET };
+      if (!Config.BINANCE_FOMO && price) {
+        options.price = +price;
+      }
+      return Binance.instance.long(options);
+    }
+    case 'short': {
+      // void Binance.instance.close(ticker, 'long');
+      const options: FutureAction = { ticker, usdt: Config.BINANCE_AMOUNT_BET };
+      if (!Config.BINANCE_FOMO && price) {
+        options.price = +price;
+      }
+      return Binance.instance.short(options);
+    }
     case 'flat':
       return Binance.instance.close(ticker, prev as FuturePosition);
   }
