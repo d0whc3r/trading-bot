@@ -1,0 +1,17 @@
+{
+  "inputFiles": ["./src"],
+  "exclude": ["**/*.(test|.spec|.e2e).*"],
+  "mode": "file",
+  "includeVersion": true,
+  "includeDeclarations": true,
+  "tsconfig": "tsconfig.json",
+  "out": "./docs",
+  "excludePrivate": true,
+  "excludeProtected": true,
+  "excludeExternals": true,
+  "readme": "README.md",
+  "name": "leonardo-dm",
+  "ignoreCompilerErrors": true,
+  "plugin": ["typedoc-plugin-markdown"],
+  "listInvalidSymbolLinks": true
+}

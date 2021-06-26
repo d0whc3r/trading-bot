@@ -1,0 +1,7 @@
+node_modules
+dist
+build
+.sonar
+.rpt2_cache
+*.d.ts
+.eslintrc.js
