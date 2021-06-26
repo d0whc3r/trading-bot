@@ -8,7 +8,11 @@ describe('Binance api', () => {
     exchange = Binance.instance;
   });
   it('Open long position with 6$ at market', async () => {
-    const result = await exchange.long({ ticker, price: 0.002185, usdt: 6 });
+    const result = await exchange.long({ ticker, usdt: 6 });
+    expect(result).not.toBeFalsy();
+  });
+  it('Open long position with 6$ at market COMP', async () => {
+    const result = await exchange.long({ ticker: 'COMPUSDT', price: 212.85, usdt: 6 });
     expect(result).not.toBeFalsy();
   });
   it('Close latest position for long', async () => {

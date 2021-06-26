@@ -15,10 +15,10 @@ function atBinance(ticker: string, action: Strategy['market_position'], price: s
   switch (action) {
     case 'long':
       void Binance.instance.close(ticker, 'short');
-      return Binance.instance.long({ ticker, price: validPrice, usdt: Config.BINANCE_AMOUNT_BET });
+      return Binance.instance.long({ ticker, usdt: Config.BINANCE_AMOUNT_BET });
     case 'short':
       void Binance.instance.close(ticker, 'long');
-      return Binance.instance.short({ ticker, price: validPrice, usdt: Config.BINANCE_AMOUNT_BET });
+      return Binance.instance.short({ ticker, usdt: Config.BINANCE_AMOUNT_BET });
     case 'flat':
       return Binance.instance.close(ticker, prev as FuturePosition);
   }

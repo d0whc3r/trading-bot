@@ -70,3 +70,12 @@ export interface LastPosition {
   position?: Position;
   last?: GoodPosition;
 }
+
+export type LimitOrderParams = {
+  ticker: string;
+  position: FuturePosition;
+  entryPrice?: number;
+  type: LimitOrderType;
+};
+
+export type LimitOrderType = 'stop' | 'profit';
