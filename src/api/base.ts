@@ -2,8 +2,6 @@ import { Config } from '../config';
 import type { FutureAction, FuturePosition } from '../types/api';
 
 export abstract class BaseApi {
-  protected MAIN_DECIMALS = 10 ** 6;
-
   protected constructor() {
   }
 
@@ -19,7 +17,9 @@ export abstract class BaseApi {
 
   public abstract getPrice(ticker: string): Promise<number | undefined>;
 
-  protected abstract getAmountDecimals(ticker: string): Promise<number>;
+  protected abstract getAmountDecimals(ticker: string): number;
+
+  protected abstract getPriceDecimals(ticker: string): number;
 
   protected async genericActions({ ticker, usdt = Config.BINANCE_AMOUNT_BET }: FutureAction) {
     const name = this.cleanTicker(ticker);
@@ -37,7 +37,7 @@ export abstract class BaseApi {
       return null;
     }
     const decimals = await this.getAmountDecimals(ticker);
-    const amount = +((Math.floor(usdt / price * this.MAIN_DECIMALS) / this.MAIN_DECIMALS).toFixed(decimals));
+    const amount = Math.floor(usdt / price * decimals) / decimals;
     return { amount, price };
   }
 

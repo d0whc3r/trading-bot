@@ -1,13 +1,14 @@
-import BinanceApi, { Binance as BinanceType, MarginType, NewOrder, Order, OrderSide, OrderType, TimeInForce } from 'binance-api-node';
+import BinanceApi, { Binance as BinanceType, ExchangeInfo, MarginType, NewOrder, Order, OrderSide, OrderType, TimeInForce } from 'binance-api-node';
 import { Config } from '../config';
 import { logger } from '../logger';
-import type { FutureAction, FuturePosition, QuoteResult } from '../types/api';
+import type { FutureAction, FuturePosition } from '../types/api';
 import { BaseApi } from './base';
 
 export class Binance extends BaseApi {
   private static _instance: Binance;
   private exchange: BinanceType;
   private recvWindow = 10000000;
+  private exchangeInfo: ExchangeInfo | undefined;
 
   private constructor() {
     super();
@@ -16,6 +17,9 @@ export class Binance extends BaseApi {
       apiSecret: Config.BINANCE_SECRETKEY
     });
     this.exchange.futuresPositionMode({ dualSidePosition: true } as any);
+    this.exchange.exchangeInfo().then((result) => {
+      this.exchangeInfo = result;
+    });
   }
 
   static get instance() {
@@ -57,22 +61,22 @@ export class Binance extends BaseApi {
     return await this.exchange.futuresAccountBalance();
   }
 
-  public async getQuote(ticker: string): Promise<QuoteResult> {
-    const result = await this.exchange.futuresBook({ symbol: ticker, limit: 10 });
-    return {
-      symbol: ticker,
-      bidQty: result.bids[0].quantity,
-      bidPrice: result.bids[0].price,
-      askQty: result.asks[0].quantity,
-      askPrice: result.asks[0].price,
-      time: result.lastUpdateId
-    };
+  protected getAmountDecimals(ticker: string) {
+    const info = this.exchangeInfo?.symbols.find((s) => s.symbol === ticker);
+    let decimals = 0;
+    if (info) {
+      decimals = +info.quoteAssetPrecision;
+    }
+    return decimals;
   }
 
-  protected async getAmountDecimals(ticker: string) {
-    const quote = await this.getQuote(ticker);
-    const num = quote.bidQty.split('.')[1] || '';
-    return num.length;
+  protected getPriceDecimals(ticker: string) {
+    const info = this.exchangeInfo?.symbols.find((s) => s.symbol === ticker);
+    let decimals = 0;
+    if (info) {
+      decimals = +(info as any).pricePrecision;
+    }
+    return decimals;
   }
 
   private async calculateLimit(ticker: string, action: FuturePosition, type: 'stop' | 'profit', price?: number) {
@@ -88,8 +92,9 @@ export class Binance extends BaseApi {
     }
     const isStop = type === 'stop';
     const calc = isStop ? Config.BINANCE_STOP_LOSS : Config.BINANCE_TAKE_PROFIT;
-    const diff = realPrice * calc / 100;
-    const prices = [realPrice - diff, realPrice + diff].map((p) => Math.floor(p * this.MAIN_DECIMALS) / this.MAIN_DECIMALS);
+    const diff = realPrice * calc / Config.BINANCE_LEVERAGE / 100;
+    const priceDecimals = this.getPriceDecimals(ticker);
+    const prices = [realPrice - diff, realPrice + diff].map((p) => Math.floor(p * priceDecimals) / priceDecimals);
     const first = isStop ? 0 : 1;
     const second = isStop ? 1 : 0;
     const result = action === 'long' ? prices[first] : prices[second];
