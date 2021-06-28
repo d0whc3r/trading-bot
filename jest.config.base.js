@@ -18,7 +18,7 @@ module.exports = (name, rootDir = __dirname) => ({
   collectCoverageFrom: ['src/**/*.(ts|tsx)', '!src/**/*.d.ts', '!**/types/**/*.ts'],
   cache: false,
   setupFilesAfterEnv: [path.resolve(__dirname, './jest.setup-after-env.js')],
-  testEnvironment: 'jsdom',
+  testEnvironment: 'node',
   coverageReporters: ['lcov', 'text', 'cobertura'],
   coverageThreshold: {
     global: {

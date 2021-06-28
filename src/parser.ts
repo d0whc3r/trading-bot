@@ -14,7 +14,7 @@ function atBinance(ticker: string, action: Strategy['market_position'], price: s
   logger.info(`BINANCE: ${action} - ${ticker} - ${validPrice}`);
   switch (action) {
     case 'long': {
-      // void Binance.instance.close(ticker, 'short');
+      void Binance.instance.close(ticker, 'short');
       const options: FutureAction = { ticker, usdt: Config.BINANCE_AMOUNT_BET };
       if (!Config.BINANCE_FOMO && price) {
         options.price = +price;
@@ -22,7 +22,7 @@ function atBinance(ticker: string, action: Strategy['market_position'], price: s
       return Binance.instance.long(options);
     }
     case 'short': {
-      // void Binance.instance.close(ticker, 'long');
+      void Binance.instance.close(ticker, 'long');
       const options: FutureAction = { ticker, usdt: Config.BINANCE_AMOUNT_BET };
       if (!Config.BINANCE_FOMO && price) {
         options.price = +price;
@@ -30,6 +30,7 @@ function atBinance(ticker: string, action: Strategy['market_position'], price: s
       return Binance.instance.short(options);
     }
     case 'flat':
+      // return;
       return Binance.instance.close(ticker, prev as FuturePosition);
   }
 }

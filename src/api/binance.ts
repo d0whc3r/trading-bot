@@ -172,6 +172,7 @@ export class Binance extends BaseApi {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment,@typescript-eslint/no-unsafe-member-access
       logger.error({ title: 'ERROR in open LONG', msg: error.message, error });
     }
+    await this.closeOpenOrders(ticker, 'short');
     return result;
   }
 
@@ -210,6 +211,7 @@ export class Binance extends BaseApi {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       logger.error({ title: 'ERROR in open SHORT', error });
     }
+    await this.closeOpenOrders(ticker, 'long');
     return result;
   }
 
