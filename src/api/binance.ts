@@ -127,10 +127,10 @@ export class Binance extends BaseApi {
     const limitPrice = await this.calculateLimit(params);
     const positionSide = position.toUpperCase();
     const side = position === 'long' ? OrderSide.SELL : OrderSide.BUY;
-    const orderType = type === 'stop' ? OrderType.STOP_MARKET : OrderType.TAKE_PROFIT_MARKET;
+    const orderType = type === 'stop' ? OrderType.TRAILING_STOP_MARKET : OrderType.TAKE_PROFIT_MARKET;
     if (limitPrice) {
       logger.debug({ title: `${symbol} Add limit order for ${type} at ${limitPrice} based on entry price: ${entryPrice || 'Market'}` });
-      await this.exchange.futuresOrder({
+      const config = {
         symbol,
         positionSide,
         recvWindow: this.recvWindow,
@@ -138,7 +138,13 @@ export class Binance extends BaseApi {
         type: orderType,
         stopPrice: limitPrice,
         closePosition: true
-      } as NewOrder);
+      } as NewOrder;
+      if (type === 'stop') {
+        delete config.stopPrice;
+        config.activationPrice = limitPrice;
+        config.callbackRate = Config.BINANCE_STOP_LOSS.toString();
+      }
+      await this.exchange.futuresOrder(config);
     }
     return limitPrice;
   }
