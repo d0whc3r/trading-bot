@@ -80,7 +80,7 @@
     "babel-jest": "27.0.5",
     "builtin-modules": "3.2.0",
     "commitizen": "4.2.4",
-    "core-js": "3.15.1",
+    "core-js": "3.15.2",
     "cross-env": "7.0.3",
     "dotenv-cli": "4.0.0",
     "dts-bundle-generator": "5.9.0",
