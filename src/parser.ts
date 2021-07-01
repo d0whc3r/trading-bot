@@ -31,7 +31,7 @@ function atBinance(ticker: string, action: Strategy['market_position'], price: s
     }
     case 'flat':
       // return;
-      return Binance.instance.close(ticker, prev as FuturePosition);
+      return Binance.instance.close(ticker, prev as FuturePosition, true);
   }
 }
 

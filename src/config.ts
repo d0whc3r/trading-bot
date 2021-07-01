@@ -19,4 +19,6 @@ export class Config {
   public static BINANCE_STOP_LOSS = +(process.env.BINANCE_STOP_LOSS || 0);
   public static BINANCE_TAKE_PROFIT = +(process.env.BINANCE_TAKE_PROFIT || 0);
   public static BINANCE_FOMO = +parseBool(process.env.BINANCE_FOMO || false);
+  public static TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+  public static TELEGRAM_CHANNEL_ID = process.env.TELEGRAM_CHANNEL_ID;
 }

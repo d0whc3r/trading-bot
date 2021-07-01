@@ -3,12 +3,16 @@ import { Config } from '../config';
 import { logger } from '../logger';
 import type { FutureAction, FuturePosition, LimitOrderParams } from '../types/api';
 import { BaseApi } from './base';
+import { Telegram } from './telegram';
 
 export class Binance extends BaseApi {
   private static _instance: Binance;
   private exchange: BinanceType;
   private recvWindow = 10000000;
   private exchangeInfo: ExchangeInfo | undefined;
+  private telegram: Telegram;
+  private stopPercent = +Config.BINANCE_STOP_LOSS;
+  private profitPercent = +Config.BINANCE_TAKE_PROFIT;
 
   private constructor() {
     super();
@@ -18,6 +22,7 @@ export class Binance extends BaseApi {
     });
     void this.exchange.futuresPositionMode({ dualSidePosition: true } as any);
     void this.getExchangeInfo();
+    this.telegram = new Telegram();
   }
 
   static get instance() {
@@ -107,7 +112,7 @@ export class Binance extends BaseApi {
     }
     const isStop = type === 'stop';
     const calc = isStop ? Config.BINANCE_STOP_LOSS : Config.BINANCE_TAKE_PROFIT;
-    const diff = (realPrice * calc) / Config.BINANCE_LEVERAGE / 100;
+    const diff = (realPrice * calc) / 100;
     const priceDecimals = await this.getPriceDecimals(ticker);
     const prices = [realPrice - diff, realPrice + diff].map((p) => Math.floor(p * 10 ** priceDecimals) / 10 ** priceDecimals);
     const first = isStop ? 0 : 1;
@@ -135,6 +140,7 @@ export class Binance extends BaseApi {
         closePosition: true
       } as NewOrder);
     }
+    return limitPrice;
   }
 
   public async long({ ticker, price, usdt = Config.BINANCE_AMOUNT_BET }: FutureAction) {
@@ -165,8 +171,15 @@ export class Binance extends BaseApi {
         mainOrder.price = price.toString();
       }
       result = await this.exchange.futuresOrder(mainOrder);
-      await this.setLimitOrder({ ticker, position: 'long', entryPrice: price || generic.price, type: 'stop' });
-      await this.setLimitOrder({ ticker, position: 'long', entryPrice: price || generic.price, type: 'profit' });
+      const entryPrice = price || itemPrice;
+      const stopPrice = await this.setLimitOrder({ ticker, position: 'long', entryPrice, type: 'stop' });
+      const profitPrice = await this.setLimitOrder({ ticker, position: 'long', entryPrice, type: 'profit' });
+      this.telegram.sendMessage(
+        '🚀 Long Alert',
+        `BINANCE:${ticker} (Futures)\n\nPrecio: $${entryPrice}${stopPrice ? `\nStop: $${stopPrice} (${this.stopPercent}%)` : ''}${
+          profitPrice ? `\nProfit: $${profitPrice} (${this.profitPercent}%)` : ''
+        }`
+      );
       logger.debug({ title: 'LONG RESULT ACTION', result });
     } catch (error) {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment,@typescript-eslint/no-unsafe-member-access
@@ -204,8 +217,15 @@ export class Binance extends BaseApi {
         mainOrder.price = price.toString();
       }
       result = await this.exchange.futuresOrder(mainOrder);
-      await this.setLimitOrder({ ticker, position: 'short', entryPrice: price || generic.price, type: 'stop' });
-      await this.setLimitOrder({ ticker, position: 'short', entryPrice: price || generic.price, type: 'profit' });
+      const entryPrice = price || itemPrice;
+      const stopPrice = await this.setLimitOrder({ ticker, position: 'short', entryPrice, type: 'stop' });
+      const profitPrice = await this.setLimitOrder({ ticker, position: 'short', entryPrice, type: 'profit' });
+      this.telegram.sendMessage(
+        '🩸 Short Alert',
+        `BINANCE:${ticker} (Futures)\n\nPrecio: $${+entryPrice}${stopPrice ? `\nStop: $${stopPrice} (${this.stopPercent}%)` : ''}${
+          profitPrice ? `\nProfit: $${profitPrice} (${this.profitPercent}%)` : ''
+        }`
+      );
       logger.debug({ title: 'SHORT RESULT ACTION', result });
     } catch (error) {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
@@ -241,15 +261,18 @@ export class Binance extends BaseApi {
     return position;
   }
 
-  public async close(ticker: string, prev: FuturePosition) {
+  public async close(ticker: string, prev: FuturePosition, isFlat = false) {
     const name = this.cleanTicker(ticker);
     const last = await this.getLastAction(name, prev);
     const orders = await this.closeOpenOrders(ticker, prev);
     if (!last) {
+      if (isFlat) {
+        this.telegram.sendMessage('Close long/short', `BINANCE:${name} (Futures)\n\nPrecio: MARKET`);
+      }
       logger.warn(`[!] No last position in ${prev} for ${name}`);
       return orders;
     }
-    const { positionAmt, symbol } = last;
+    const { positionAmt, symbol, markPrice, entryPrice } = last;
     const side = +positionAmt > 0 ? 'BUY' : 'SELL';
     logger.info({
       title: `[!]${Config.BINANCE_DEMO ? ' DEMO' : ''} Closing latest position for ${symbol} - ${side} - ${positionAmt}`
@@ -258,6 +281,7 @@ export class Binance extends BaseApi {
       return null;
     }
     let order: Order;
+    const profit = (((+entryPrice - +markPrice) / +entryPrice) * 100).toFixed(2);
     switch (side) {
       case 'BUY': {
         order = await this.exchange.futuresOrder({
@@ -268,6 +292,9 @@ export class Binance extends BaseApi {
           positionSide: 'LONG',
           recvWindow: this.recvWindow
         } as NewOrder);
+        if (isFlat) {
+          this.telegram.sendMessage('Close Long', `BINANCE:${symbol} (Futures)\n\nPrecio: MARKET ($${+markPrice})\nProfit: ${profit}%`);
+        }
         break;
       }
       case 'SELL': {
@@ -280,12 +307,15 @@ export class Binance extends BaseApi {
           positionSide: 'SHORT',
           recvWindow: this.recvWindow
         } as NewOrder);
+        if (isFlat) {
+          this.telegram.sendMessage('Close Short', `BINANCE:${symbol} (Futures)\n\nPrecio: MARKET ($${+markPrice})\nProfit: ${profit}%`);
+        }
         break;
       }
       default:
         return;
     }
-    logger.info(`[!] Closed position for ${symbol}`);
+    logger.info(`[!] Closed position for ${symbol} (${profit}%)`);
     logger.debug({ title: 'CLOSED ORDER FOR', symbol, order });
     return order;
   }
