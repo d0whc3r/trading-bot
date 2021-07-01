@@ -76,6 +76,8 @@ export type LimitOrderParams = {
   position: FuturePosition;
   entryPrice?: number;
   type: LimitOrderType;
+  create?: boolean;
+  trailing?: boolean;
 };
 
 export type LimitOrderType = 'stop' | 'profit';

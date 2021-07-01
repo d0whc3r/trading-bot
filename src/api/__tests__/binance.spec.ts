@@ -31,4 +31,8 @@ describe('Binance api', () => {
     const result = await exchange.closeOpenOrders(ticker, 'short');
     expect(result).not.toBeFalsy();
   });
+  // it('Trailing stop', async () => {
+  //   const result = await exchange.trailing({ ticker, usdt: 6 });
+  //   expect(result).not.toBeFalsy();
+  // });
 });

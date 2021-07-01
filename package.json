@@ -19,7 +19,7 @@
     "prepare": "husky install",
     "postinstall": "patch-package",
     "lint:stage": "eslint --ext .js,.jsx,.ts,.tsx --fix",
-    "start": "dotenv -e .env -- node --require ts-node/register src/server.ts",
+    "start": "ts-node ./src/index.ts",
     "startts": "ts-node src/server.ts",
     "startnode": "nodemon",
     "rollup:build": "rollup -c --environment INCLUDE_DEPS,BUILD:production",

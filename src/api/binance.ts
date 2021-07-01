@@ -122,23 +122,35 @@ export class Binance extends BaseApi {
   }
 
   protected async setLimitOrder(params: LimitOrderParams) {
-    const { ticker, position, type, entryPrice } = params;
+    const { ticker, position, type, entryPrice, create = true, trailing = false } = params;
     const symbol = this.cleanTicker(ticker);
     const limitPrice = await this.calculateLimit(params);
     const positionSide = position.toUpperCase();
+    const sellOrder = trailing ? OrderType.TRAILING_STOP_MARKET : OrderType.STOP_MARKET;
     const side = position === 'long' ? OrderSide.SELL : OrderSide.BUY;
-    const orderType = type === 'stop' ? OrderType.STOP_MARKET : OrderType.TAKE_PROFIT_MARKET;
-    if (limitPrice) {
-      logger.debug({ title: `${symbol} Add limit order for ${type} at ${limitPrice} based on entry price: ${entryPrice || 'Market'}` });
-      await this.exchange.futuresOrder({
-        symbol,
-        positionSide,
-        recvWindow: this.recvWindow,
-        side,
-        type: orderType,
-        stopPrice: limitPrice,
-        closePosition: true
-      } as NewOrder);
+    const orderType = type === 'stop' ? sellOrder : OrderType.TAKE_PROFIT_MARKET;
+    if (create && limitPrice) {
+      try {
+        logger.debug({ title: `${symbol} Add limit order for ${type} at ${limitPrice} based on entry price: ${entryPrice || 'Market'}` });
+        const order = {
+          symbol,
+          positionSide,
+          recvWindow: this.recvWindow,
+          side,
+          type: orderType,
+          closePosition: true
+        } as NewOrder;
+        if (trailing) {
+          order.callbackRate = Config.BINANCE_STOP_LOSS.toString();
+          order.activationPrice = limitPrice;
+        } else {
+          order.stopPrice = limitPrice;
+        }
+        await this.exchange.futuresOrder(order);
+      } catch (error) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        logger.error({ title: 'Error in limit order', type, position, limitPrice, error });
+      }
     }
     return limitPrice;
   }
@@ -154,40 +166,81 @@ export class Binance extends BaseApi {
       return null;
     }
     let result: Order | undefined;
+    const orderInfo = {
+      symbol: name,
+      side: OrderSide.BUY,
+      type: price ? OrderType.LIMIT : OrderType.MARKET,
+      positionSide: 'LONG',
+      recvWindow: this.recvWindow
+    } as NewOrder;
+    const mainOrder = {
+      ...orderInfo,
+      quantity: amount.toString(),
+      isIsolated: true
+    };
+    if (price) {
+      mainOrder.price = price.toString();
+    }
     try {
-      const orderInfo = {
-        symbol: name,
-        side: OrderSide.BUY,
-        type: price ? OrderType.LIMIT : OrderType.MARKET,
-        positionSide: 'LONG',
-        recvWindow: this.recvWindow
-      } as NewOrder;
-      const mainOrder = {
-        ...orderInfo,
-        quantity: amount.toString(),
-        isIsolated: true
-      };
-      if (price) {
-        mainOrder.price = price.toString();
-      }
       result = await this.exchange.futuresOrder(mainOrder);
-      const entryPrice = price || itemPrice;
-      const stopPrice = await this.setLimitOrder({ ticker, position: 'long', entryPrice, type: 'stop' });
-      const profitPrice = await this.setLimitOrder({ ticker, position: 'long', entryPrice, type: 'profit' });
-      this.telegram.sendMessage(
-        '🚀 Long Alert',
-        `BINANCE:${ticker} (Futures)\n\nPrecio: $${entryPrice}${stopPrice ? `\nStop: $${stopPrice} (${this.stopPercent}%)` : ''}${
-          profitPrice ? `\nProfit: $${profitPrice} (${this.profitPercent}%)` : ''
-        }`
-      );
-      logger.debug({ title: 'LONG RESULT ACTION', result });
     } catch (error) {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment,@typescript-eslint/no-unsafe-member-access
       logger.error({ title: 'ERROR in open LONG', msg: error.message, error });
     }
+    const entryPrice = price || itemPrice;
+    const stopPrice = await this.setLimitOrder({ ticker, position: 'long', entryPrice, type: 'stop', create: !!result });
+    const profitPrice = await this.setLimitOrder({ ticker, position: 'long', entryPrice, type: 'profit', create: !!result });
+    this.telegram.sendMessage(
+      '🚀 Long Alert',
+      `BINANCE:${ticker} (Futures)\n\nPrecio: $${entryPrice}${stopPrice ? `\nStop: $${stopPrice} (${this.stopPercent}%)` : ''}${
+        profitPrice ? `\nProfit: $${profitPrice} (${this.profitPercent}%)` : ''
+      }`
+    );
+    logger.debug({ title: 'LONG RESULT ACTION', result });
+
     await this.closeOpenOrders(ticker, 'short');
     return result;
   }
+
+  // public async trailing({ ticker, price, usdt = Config.BINANCE_AMOUNT_BET }: FutureAction) {
+  //   const generic = await this.genericActions({ ticker, price, usdt });
+  //   if (!generic) {
+  //     return null;
+  //   }
+  //   const { name, amount, price: itemPrice } = generic;
+  //   logger.info(`[!]${Config.BINANCE_DEMO ? ' DEMO' : ''} SHORT[${name}/${itemPrice}]: ${usdt}$ -> ${amount}${price ? ` (${price}$)` : '(Market)'}`);
+  //   if (Config.BINANCE_DEMO) {
+  //     return null;
+  //   }
+  //   let result: Order | undefined;
+  //   const orderInfo = {
+  //     symbol: name,
+  //     side: OrderSide.SELL,
+  //     type: price ? OrderType.LIMIT : OrderType.MARKET,
+  //     positionSide: 'SHORT',
+  //     recvWindow: this.recvWindow
+  //   } as NewOrder;
+  //   const mainOrder = {
+  //     ...orderInfo,
+  //     quantity: amount.toString(),
+  //     isIsolated: true
+  //   };
+  //   if (price) {
+  //     mainOrder.price = price.toString();
+  //   }
+  //   try {
+  //     result = await this.exchange.futuresOrder(mainOrder);
+  //   } catch (error) {
+  //     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  //     logger.error({ title: 'ERROR in open SHORT', error });
+  //   }
+  //   const entryPrice = price || itemPrice;
+  //   const stopPrice = await this.setLimitOrder({ ticker, position: 'short', entryPrice, type: 'stop', create: !!result, trailing: true });
+  //   const profitPrice = await this.setLimitOrder({ ticker, position: 'short', entryPrice, type: 'profit', create: !!result, trailing: false });
+  //   // eslint-disable-next-line no-console
+  //   console.log('STOP/PROFIT', stopPrice, profitPrice);
+  //   return result;
+  // }
 
   public async short({ ticker, price, usdt = Config.BINANCE_AMOUNT_BET }: FutureAction) {
     const generic = await this.genericActions({ ticker, price, usdt });
@@ -200,37 +253,37 @@ export class Binance extends BaseApi {
       return null;
     }
     let result: Order | undefined;
+    const orderInfo = {
+      symbol: name,
+      side: OrderSide.SELL,
+      type: price ? OrderType.LIMIT : OrderType.MARKET,
+      positionSide: 'SHORT',
+      recvWindow: this.recvWindow
+    } as NewOrder;
+    const mainOrder = {
+      ...orderInfo,
+      quantity: amount.toString(),
+      isIsolated: true
+    };
+    if (price) {
+      mainOrder.price = price.toString();
+    }
     try {
-      const orderInfo = {
-        symbol: name,
-        side: OrderSide.SELL,
-        type: price ? OrderType.LIMIT : OrderType.MARKET,
-        positionSide: 'SHORT',
-        recvWindow: this.recvWindow
-      } as NewOrder;
-      const mainOrder = {
-        ...orderInfo,
-        quantity: amount.toString(),
-        isIsolated: true
-      };
-      if (price) {
-        mainOrder.price = price.toString();
-      }
       result = await this.exchange.futuresOrder(mainOrder);
-      const entryPrice = price || itemPrice;
-      const stopPrice = await this.setLimitOrder({ ticker, position: 'short', entryPrice, type: 'stop' });
-      const profitPrice = await this.setLimitOrder({ ticker, position: 'short', entryPrice, type: 'profit' });
-      this.telegram.sendMessage(
-        '🩸 Short Alert',
-        `BINANCE:${ticker} (Futures)\n\nPrecio: $${+entryPrice}${stopPrice ? `\nStop: $${stopPrice} (${this.stopPercent}%)` : ''}${
-          profitPrice ? `\nProfit: $${profitPrice} (${this.profitPercent}%)` : ''
-        }`
-      );
-      logger.debug({ title: 'SHORT RESULT ACTION', result });
     } catch (error) {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       logger.error({ title: 'ERROR in open SHORT', error });
     }
+    const entryPrice = price || itemPrice;
+    const stopPrice = await this.setLimitOrder({ ticker, position: 'short', entryPrice, type: 'stop', create: !!result });
+    const profitPrice = await this.setLimitOrder({ ticker, position: 'short', entryPrice, type: 'profit', create: !!result });
+    this.telegram.sendMessage(
+      '🩸 Short Alert',
+      `BINANCE:${ticker} (Futures)\n\nPrecio: $${+entryPrice}${stopPrice ? `\nStop: $${stopPrice} (${this.stopPercent}%)` : ''}${
+        profitPrice ? `\nProfit: $${profitPrice} (${this.profitPercent}%)` : ''
+      }`
+    );
+    logger.debug({ title: 'SHORT RESULT ACTION', result });
     await this.closeOpenOrders(ticker, 'long');
     return result;
   }
