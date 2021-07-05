@@ -12,9 +12,16 @@ export const dateConfig = {
   datePattern: 'YYYY-MM-DD-HH',
   zippedArchive: true,
   maxSize: '20m',
-  maxFiles: '14d'
+  maxFiles: '3d'
 };
 
+export const transportFileDebug =
+  !Config.IS_TEST &&
+  new winston.transports.DailyRotateFile({
+    filename: path.join(LOG_PATH, 'debug-%DATE%.log'),
+    level: 'debug',
+    ...dateConfig
+  });
 export const transportFileError =
   !Config.IS_TEST &&
   new winston.transports.DailyRotateFile({
@@ -51,7 +58,7 @@ export const transportLogdnaWinston =
 const logger = winston.createLogger({
   level: 'debug',
   format: winston.format.combine(winston.format.timestamp(), winston.format.json()),
-  transports: [transportFileError, transportFile, transportLogdnaWinston].filter(Boolean)
+  transports: [transportFileDebug, transportFileError, transportFile, transportLogdnaWinston].filter(Boolean)
 });
 
 if (process.env.NODE_ENV !== 'production') {

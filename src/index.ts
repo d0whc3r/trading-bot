@@ -8,7 +8,7 @@ import winston from 'winston';
 import { Config } from './config';
 import { dateConfig, LOG_PATH, logger } from './logger';
 import { parsePetition } from './parser';
-import type { SignalModel } from './types/signalModel';
+import type { SignalModel } from './types/signalModel.type';
 
 process.on('uncaughtException', (error) => {
   logger.error({ title: 'Uncaught Exception', message: error.message, error });

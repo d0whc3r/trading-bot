@@ -77,7 +77,15 @@ export type LimitOrderParams = {
   entryPrice?: number;
   type: LimitOrderType;
   create?: boolean;
-  trailing?: boolean;
+  stop?: number;
+  profit?: number;
 };
 
 export type LimitOrderType = 'stop' | 'profit';
+
+export type ActualOrder = {
+  symbol: string;
+  entryPrice: number;
+  lastRoe: number;
+  positionSide: FuturePosition;
+};

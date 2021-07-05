@@ -1,8 +1,8 @@
-import { Binance } from './api/binance';
+import { Binance } from './api/binance/binance.api';
 import { Config } from './config';
 import { logger } from './logger';
-import type { FutureAction, FuturePosition } from './types/api';
-import type { ParsedSignalModel, Strategy } from './types/signalModel';
+import type { FutureAction, FuturePosition } from './types/api.type';
+import type { ParsedSignalModel, Strategy } from './types/signalModel.type';
 
 function correctPrice(price: string) {
   return +(+price).toFixed(6);

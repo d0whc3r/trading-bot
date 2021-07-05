@@ -1,4 +1,5 @@
-import { Binance } from '../binance';
+import { OrderType } from 'binance-api-node';
+import { Binance } from '../binance/binance.api';
 
 describe('Binance api', () => {
   let ticker: string;
@@ -10,6 +11,9 @@ describe('Binance api', () => {
   it('Open long position with 6$ at market', async () => {
     const result = await exchange.long({ ticker, usdt: 6 });
     expect(result).not.toBeFalsy();
+    // setTimeout(() => {
+    //   done();
+    // }, 100000);
   });
   it('Open long position with 6$ at market COMP', async () => {
     const result = await exchange.long({ ticker: 'COMPUSDT', price: 212.85, usdt: 6 });
@@ -31,8 +35,17 @@ describe('Binance api', () => {
     const result = await exchange.closeOpenOrders(ticker, 'short');
     expect(result).not.toBeFalsy();
   });
-  // it('Trailing stop', async () => {
-  //   const result = await exchange.trailing({ ticker, usdt: 6 });
-  //   expect(result).not.toBeFalsy();
+  it('Open and close stop', async () => {
+    // const result = await exchange.long({ ticker, usdt: 6 });
+    // expect(result).not.toBeFalsy();
+    const result = await exchange.closeOpenOrders(ticker, 'long', OrderType.STOP_MARKET);
+    expect(result).not.toBeFalsy();
+  });
+  // it('Futures ws', async (done) => {
+  //   exchange.initSockPriceTicker('LINKUSDT');
+  //   expect(true).not.toBeFalsy();
+  //   setTimeout(() => {
+  //     done();
+  //   }, 100000);
   // });
 });

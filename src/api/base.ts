@@ -1,6 +1,6 @@
 import type { Order } from 'binance-api-node';
 import { Config } from '../config';
-import type { FutureAction, FuturePosition } from '../types/api';
+import type { FutureAction, FuturePosition } from '../types/api.type';
 
 export abstract class BaseApi {
   protected cleanTicker(name: string) {

@@ -1,9 +1,20 @@
-import BinanceApi, { Binance as BinanceType, ExchangeInfo, MarginType, NewOrder, Order, OrderSide, OrderType } from 'binance-api-node';
-import { Config } from '../config';
-import { logger } from '../logger';
-import type { FutureAction, FuturePosition, LimitOrderParams } from '../types/api';
-import { BaseApi } from './base';
-import { Telegram } from './telegram';
+import BinanceApi, {
+  Binance as BinanceType,
+  ExchangeInfo,
+  ExecutionType,
+  MarginType,
+  NewOrder,
+  Order,
+  OrderSide,
+  OrderStatus,
+  OrderType
+} from 'binance-api-node';
+import { Config } from '../../config';
+import { logger } from '../../logger';
+import type { ActualOrder, FutureAction, FuturePosition, LimitOrderParams } from '../../types/api.type';
+import type { WSPriceUpdate } from '../../types/binanceSock.type';
+import { BaseApi } from '../base';
+import { Telegram } from '../telegram';
 
 export class Binance extends BaseApi {
   private static _instance: Binance;
@@ -13,6 +24,10 @@ export class Binance extends BaseApi {
   private telegram: Telegram;
   private stopPercent = +Config.BINANCE_STOP_LOSS;
   private profitPercent = +Config.BINANCE_TAKE_PROFIT;
+  // private binanceSock: Binance2Sock;
+  private openSockets = new Map<string, () => void>();
+  // private binanceWs: BinanceSock;
+  private actualOrders = new Map<string, ActualOrder>();
 
   private constructor() {
     super();
@@ -23,13 +38,23 @@ export class Binance extends BaseApi {
     void this.exchange.futuresPositionMode({ dualSidePosition: true } as any);
     void this.getExchangeInfo();
     this.telegram = new Telegram();
+    setTimeout(() => {
+      void this.initSock();
+    }, 2000);
+    // this.binanceSock = Binance2Sock.instance;
+    // setTimeout(() => {
+    //   this.initSockPriceTicker('BTCUSDT');
+    // }, 10000);
+    // this.binanceWs = BinanceSock.instance;
+    // this.initSock();
   }
 
   static get instance() {
     if (this._instance) {
       return this._instance;
     }
-    return new Binance();
+    this._instance = new Binance();
+    return this._instance;
   }
 
   private async getExchangeInfo() {
@@ -80,11 +105,6 @@ export class Binance extends BaseApi {
       // @ts-ignore
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       decimals = info[filter.toString()];
-      // const pFilter: any = info.filters.find((f) => f.filterType === filter);
-      // if (pFilter) {
-      //   // eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access,@typescript-eslint/no-unsafe-assignment
-      //   decimals = pFilter[part.toString()].split('1')[0]?.split('.')[1]?.length || 0;
-      // }
     }
     return decimals;
   }
@@ -99,8 +119,15 @@ export class Binance extends BaseApi {
     return await this.getDecimals(ticker, 'pricePrecision');
   }
 
-  private async calculateLimit({ ticker, position, entryPrice, type }: LimitOrderParams) {
-    if ((type === 'stop' && !Config.BINANCE_STOP_LOSS) || (type === 'profit' && !Config.BINANCE_TAKE_PROFIT)) {
+  private async calculateLimit({
+    ticker,
+    position,
+    entryPrice,
+    type,
+    profit = Config.BINANCE_TAKE_PROFIT,
+    stop = Config.BINANCE_STOP_LOSS
+  }: LimitOrderParams) {
+    if ((type === 'stop' && !stop) || (type === 'profit' && !profit)) {
       return null;
     }
     let realPrice = entryPrice;
@@ -122,31 +149,24 @@ export class Binance extends BaseApi {
   }
 
   protected async setLimitOrder(params: LimitOrderParams) {
-    const { ticker, position, type, entryPrice, create = true, trailing = false } = params;
+    const { ticker, position, type, entryPrice, create = true } = params;
     const symbol = this.cleanTicker(ticker);
     const limitPrice = await this.calculateLimit(params);
     const positionSide = position.toUpperCase();
-    const sellOrder = trailing ? OrderType.TRAILING_STOP_MARKET : OrderType.STOP_MARKET;
     const side = position === 'long' ? OrderSide.SELL : OrderSide.BUY;
-    const orderType = type === 'stop' ? sellOrder : OrderType.TAKE_PROFIT_MARKET;
+    const orderType = type === 'stop' ? OrderType.STOP_MARKET : OrderType.TAKE_PROFIT_MARKET;
     if (create && limitPrice) {
       try {
         logger.debug({ title: `${symbol} Add limit order for ${type} at ${limitPrice} based on entry price: ${entryPrice || 'Market'}` });
-        const order = {
+        await this.exchange.futuresOrder({
           symbol,
           positionSide,
           recvWindow: this.recvWindow,
           side,
           type: orderType,
+          stopPrice: limitPrice,
           closePosition: true
-        } as NewOrder;
-        if (trailing) {
-          order.callbackRate = Config.BINANCE_STOP_LOSS.toString();
-          order.activationPrice = limitPrice;
-        } else {
-          order.stopPrice = limitPrice;
-        }
-        await this.exchange.futuresOrder(order);
+        } as NewOrder);
       } catch (error) {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         logger.error({ title: 'Error in limit order', type, position, limitPrice, error });
@@ -178,8 +198,10 @@ export class Binance extends BaseApi {
       quantity: amount.toString(),
       isIsolated: true
     };
+    const fractionDigits = await this.getPriceDecimals(ticker);
+    const entryPrice = +(price || itemPrice).toFixed(fractionDigits);
     if (price) {
-      mainOrder.price = price.toString();
+      mainOrder.price = entryPrice.toString();
     }
     try {
       result = await this.exchange.futuresOrder(mainOrder);
@@ -187,12 +209,11 @@ export class Binance extends BaseApi {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment,@typescript-eslint/no-unsafe-member-access
       logger.error({ title: 'ERROR in open LONG', msg: error.message, error });
     }
-    const entryPrice = price || itemPrice;
     const stopPrice = await this.setLimitOrder({ ticker, position: 'long', entryPrice, type: 'stop', create: !!result });
     const profitPrice = await this.setLimitOrder({ ticker, position: 'long', entryPrice, type: 'profit', create: !!result });
     this.telegram.sendMessage(
       '🚀 Long Alert',
-      `BINANCE:${ticker} (Futures)\n\nPrecio: $${entryPrice}${stopPrice ? `\nStop: $${stopPrice} (${this.stopPercent}%)` : ''}${
+      `BINANCE:${ticker} (Futures)\n\nPrecio: $${entryPrice} (or less)${stopPrice ? `\nStop: $${stopPrice} (${this.stopPercent}%)` : ''}${
         profitPrice ? `\nProfit: $${profitPrice} (${this.profitPercent}%)` : ''
       }`
     );
@@ -201,46 +222,6 @@ export class Binance extends BaseApi {
     await this.closeOpenOrders(ticker, 'short');
     return result;
   }
-
-  // public async trailing({ ticker, price, usdt = Config.BINANCE_AMOUNT_BET }: FutureAction) {
-  //   const generic = await this.genericActions({ ticker, price, usdt });
-  //   if (!generic) {
-  //     return null;
-  //   }
-  //   const { name, amount, price: itemPrice } = generic;
-  //   logger.info(`[!]${Config.BINANCE_DEMO ? ' DEMO' : ''} SHORT[${name}/${itemPrice}]: ${usdt}$ -> ${amount}${price ? ` (${price}$)` : '(Market)'}`);
-  //   if (Config.BINANCE_DEMO) {
-  //     return null;
-  //   }
-  //   let result: Order | undefined;
-  //   const orderInfo = {
-  //     symbol: name,
-  //     side: OrderSide.SELL,
-  //     type: price ? OrderType.LIMIT : OrderType.MARKET,
-  //     positionSide: 'SHORT',
-  //     recvWindow: this.recvWindow
-  //   } as NewOrder;
-  //   const mainOrder = {
-  //     ...orderInfo,
-  //     quantity: amount.toString(),
-  //     isIsolated: true
-  //   };
-  //   if (price) {
-  //     mainOrder.price = price.toString();
-  //   }
-  //   try {
-  //     result = await this.exchange.futuresOrder(mainOrder);
-  //   } catch (error) {
-  //     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  //     logger.error({ title: 'ERROR in open SHORT', error });
-  //   }
-  //   const entryPrice = price || itemPrice;
-  //   const stopPrice = await this.setLimitOrder({ ticker, position: 'short', entryPrice, type: 'stop', create: !!result, trailing: true });
-  //   const profitPrice = await this.setLimitOrder({ ticker, position: 'short', entryPrice, type: 'profit', create: !!result, trailing: false });
-  //   // eslint-disable-next-line no-console
-  //   console.log('STOP/PROFIT', stopPrice, profitPrice);
-  //   return result;
-  // }
 
   public async short({ ticker, price, usdt = Config.BINANCE_AMOUNT_BET }: FutureAction) {
     const generic = await this.genericActions({ ticker, price, usdt });
@@ -265,8 +246,10 @@ export class Binance extends BaseApi {
       quantity: amount.toString(),
       isIsolated: true
     };
+    const fractionDigits = await this.getPriceDecimals(ticker);
+    const entryPrice = +(price || itemPrice).toFixed(fractionDigits);
     if (price) {
-      mainOrder.price = price.toString();
+      mainOrder.price = entryPrice.toString();
     }
     try {
       result = await this.exchange.futuresOrder(mainOrder);
@@ -274,12 +257,11 @@ export class Binance extends BaseApi {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       logger.error({ title: 'ERROR in open SHORT', error });
     }
-    const entryPrice = price || itemPrice;
     const stopPrice = await this.setLimitOrder({ ticker, position: 'short', entryPrice, type: 'stop', create: !!result });
     const profitPrice = await this.setLimitOrder({ ticker, position: 'short', entryPrice, type: 'profit', create: !!result });
     this.telegram.sendMessage(
       '🩸 Short Alert',
-      `BINANCE:${ticker} (Futures)\n\nPrecio: $${+entryPrice}${stopPrice ? `\nStop: $${stopPrice} (${this.stopPercent}%)` : ''}${
+      `BINANCE:${ticker} (Futures)\n\nPrecio: $${+entryPrice} (or more)${stopPrice ? `\nStop: $${stopPrice} (${this.stopPercent}%)` : ''}${
         profitPrice ? `\nProfit: $${profitPrice} (${this.profitPercent}%)` : ''
       }`
     );
@@ -288,13 +270,15 @@ export class Binance extends BaseApi {
     return result;
   }
 
-  public async closeOpenOrders(ticker: string, prev: FuturePosition) {
+  public async closeOpenOrders(ticker: string, prev: FuturePosition, type?: OrderType) {
     const symbol = this.cleanTicker(ticker);
     const orders = await this.exchange.futuresOpenOrders({ symbol });
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access,@typescript-eslint/no-unsafe-call
-    const order = orders.filter((o: any) => o.positionSide && o.positionSide.toLowerCase() === prev.toLowerCase());
+    const order = orders.filter(
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access,@typescript-eslint/no-unsafe-call
+      (o: any) => o.positionSide && o.positionSide.toLowerCase() === prev.toLowerCase() && (!type || (type && o.type === type))
+    );
     if (order?.length) {
-      logger.debug({ title: `Close ${order.length} open order/s`, symbol, position: prev });
+      logger.info({ title: `Close ${order.length} open order/s`, symbol, position: prev, type });
       if (Config.BINANCE_DEMO) {
         return true;
       }
@@ -318,6 +302,12 @@ export class Binance extends BaseApi {
     const name = this.cleanTicker(ticker);
     const last = await this.getLastAction(name, prev);
     const orders = await this.closeOpenOrders(ticker, prev);
+    if (this.openSockets.has(name)) {
+      const closeSocket = this.openSockets.get(name);
+      if (closeSocket) {
+        closeSocket();
+      }
+    }
     if (!last) {
       if (isFlat) {
         this.telegram.sendMessage('Close long/short', `BINANCE:${name} (Futures)\n\nPrecio: MARKET`);
@@ -334,7 +324,7 @@ export class Binance extends BaseApi {
       return null;
     }
     let order: Order;
-    const profit = (((+entryPrice - +markPrice) / +entryPrice) * 100).toFixed(2);
+    const profit = this.calculateRoe(+entryPrice, +markPrice, prev);
     switch (side) {
       case 'BUY': {
         order = await this.exchange.futuresOrder({
@@ -371,5 +361,95 @@ export class Binance extends BaseApi {
     logger.info(`[!] Closed position for ${symbol} (${profit}%)`);
     logger.debug({ title: 'CLOSED ORDER FOR', symbol, order });
     return order;
+  }
+
+  private async initSock() {
+    await this.exchange.ws.futuresUser((msg) => {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      const { symbol, orderType, executionType, positionSide, orderStatus, price, side } = msg;
+      if (
+        symbol &&
+        orderType &&
+        executionType &&
+        positionSide &&
+        [OrderType.LIMIT, OrderType.MARKET].includes(orderType) &&
+        executionType === ExecutionType.CANCELED
+      ) {
+        // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+        logger.info(`Close remaining open orders of closed order ${symbol}, ${orderType}, ${executionType}, ${positionSide}`);
+        void this.closeOpenOrders(symbol, positionSide);
+      } else if (
+        symbol &&
+        orderType &&
+        executionType &&
+        positionSide &&
+        [OrderType.LIMIT, OrderType.MARKET].includes(orderType) &&
+        [OrderStatus.FILLED, OrderStatus.PARTIALLY_FILLED].includes(orderStatus) &&
+        ((side === OrderSide.BUY && positionSide === 'LONG') || (side === OrderSide.SELL && positionSide === 'SHORT'))
+      ) {
+        this.initSockPriceTicker(symbol, price, positionSide);
+      } else {
+        logger.debug(msg);
+      }
+    });
+  }
+
+  public initSockPriceTicker(symbol: string, entryPrice: number, positionSide: FuturePosition) {
+    if (!Config.BINANCE_DYNAMIC_STOP) {
+      return;
+    }
+    if (!this.openSockets.has(symbol)) {
+      logger.info('Starting custom substream for ' + symbol);
+      this.actualOrders.set(symbol, {
+        symbol,
+        entryPrice,
+        positionSide,
+        lastRoe: 0
+      });
+      const sock = this.exchange.ws.futuresCustomSubStream(`${symbol.toLowerCase()}@markPrice@1s`, (info: WSPriceUpdate) => {
+        // logger.info(info);
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        const { s: name, p: markPrice, E: time } = info;
+        void this.calculateDynamicSl(name, +markPrice, time);
+      });
+      this.openSockets.set(symbol, sock);
+    }
+  }
+
+  private calculateRoe(entryPrice: number, markPrice: number, positionSide: FuturePosition) {
+    const side = positionSide.toUpperCase() === 'LONG' ? 1 : -1;
+    return +(((side * (markPrice - entryPrice)) / entryPrice) * 100).toFixed(2);
+  }
+
+  private async calculateDynamicSl(symbol: string, marketPrice: number, time: number) {
+    if (!this.actualOrders.has(symbol) || !this.actualOrders.get(symbol)) {
+      return;
+    }
+    const { entryPrice, lastRoe, positionSide } = this.actualOrders.get(symbol)!;
+    const realStart = +(Config.BINANCE_DYNAMIC_STOP_START / Config.BINANCE_LEVERAGE);
+    const realStep = +(Config.BINANCE_DYNAMIC_STOP_STEP / Config.BINANCE_LEVERAGE);
+    const actualRoe = this.calculateRoe(entryPrice, marketPrice, positionSide);
+    const nextRoe = lastRoe + realStep;
+    let stopPrice = marketPrice;
+    let newRoe = 0;
+    if (time % 1000 === 0) {
+      logger.debug(`Calculate ROE for ${symbol} - Actual: ${actualRoe} - Last: ${lastRoe} - Next: ${nextRoe}`);
+    }
+    if (actualRoe > nextRoe && lastRoe > 0) {
+      newRoe = nextRoe;
+    } else if (actualRoe > realStart && lastRoe === 0) {
+      newRoe = 0.01;
+      stopPrice = entryPrice;
+    }
+
+    if (newRoe) {
+      logger.info(
+        `Calculated new ROE for ${symbol} to: ${newRoe}% (Actual: ${actualRoe} - Start: ${realStart} - Last: ${lastRoe} - Next: ${nextRoe})`
+      );
+      this.actualOrders.set(symbol, { ...this.actualOrders.get(symbol)!, lastRoe: nextRoe });
+      await this.closeOpenOrders(symbol, positionSide, OrderType.STOP_MARKET);
+      await this.setLimitOrder({ ticker: symbol, type: 'stop', entryPrice: stopPrice, position: positionSide, create: true, stop: +newRoe });
+    }
   }
 }

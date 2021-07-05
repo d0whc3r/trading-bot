@@ -39,6 +39,7 @@
     "ci": "run-s clean && rm -fr node_modules && yarn"
   },
   "dependencies": {
+    "axios": "0.21.1",
     "binance-api-node": "0.11.3",
     "body-parser": "1.19.0",
     "compression": "1.7.4",
@@ -50,7 +51,8 @@
     "node-binance-api": "0.12.5",
     "node-telegram-bot-api": "0.53.0",
     "winston": "3.3.3",
-    "winston-daily-rotate-file": "4.5.5"
+    "winston-daily-rotate-file": "4.5.5",
+    "ws": "7.5.1"
   },
   "devDependencies": {
     "@babel/core": "7.14.6",
@@ -74,6 +76,7 @@
     "@types/node-telegram-bot-api": "0.51.1",
     "@types/rollup-plugin-node-builtins": "2.1.1",
     "@types/rollup-plugin-node-globals": "1.4.0",
+    "@types/ws": "7.4.5",
     "@typescript-eslint/eslint-plugin": "4.28.0",
     "@typescript-eslint/parser": "4.28.0",
     "babel-eslint": "10.1.0",
