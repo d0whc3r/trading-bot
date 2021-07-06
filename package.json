@@ -93,7 +93,7 @@
     "eslint-plugin-prettier": "3.4.0",
     "eslint-plugin-security": "1.4.0",
     "eslint-plugin-sonarjs": "0.7.0",
-    "husky": "6.0.0",
+    "husky": "7.0.1",
     "jest": "27.0.5",
     "jest-chain": "1.1.5",
     "jest-extended": "0.11.5",
