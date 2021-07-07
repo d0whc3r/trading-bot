@@ -379,20 +379,40 @@ export class Binance extends BaseApi {
         // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
         logger.info(`Close remaining open orders of closed order ${symbol}, ${orderType}, ${executionType}, ${positionSide}`);
         void this.closeOpenOrders(symbol, positionSide);
+        this.stopSockPriceTicker(symbol);
       } else if (
         symbol &&
         orderType &&
-        executionType &&
+        orderStatus &&
         positionSide &&
         [OrderType.LIMIT, OrderType.MARKET].includes(orderType) &&
         [OrderStatus.FILLED, OrderStatus.PARTIALLY_FILLED].includes(orderStatus) &&
         ((side === OrderSide.BUY && positionSide === 'LONG') || (side === OrderSide.SELL && positionSide === 'SHORT'))
       ) {
         this.initSockPriceTicker(symbol, price, positionSide);
+      } else if (
+        symbol &&
+        orderType &&
+        orderStatus &&
+        [OrderType.STOP_MARKET, OrderType.TAKE_PROFIT_MARKET].includes(orderType) &&
+        orderStatus === OrderStatus.FILLED
+      ) {
+        this.stopSockPriceTicker(symbol);
       } else {
         logger.debug(msg);
       }
     });
+  }
+
+  public stopSockPriceTicker(symbol: string) {
+    if (this.openSockets.has(symbol)) {
+      const sock = this.openSockets.get(symbol);
+      if (sock) {
+        sock();
+      }
+      this.openSockets.delete(symbol);
+      this.actualOrders.delete(symbol);
+    }
   }
 
   public initSockPriceTicker(symbol: string, entryPrice: number, positionSide: FuturePosition) {
