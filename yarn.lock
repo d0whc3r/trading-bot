@@ -1627,10 +1627,10 @@
   resolved "https://registry.yarnpkg.com/@types/minimist/-/minimist-1.2.1.tgz#283f669ff76d7b8260df8ab7a4262cc83d988256"
   integrity sha512-fZQQafSREFyuZcdWFAExYjBiCL7AUCdgsk80iO0q4yihYYdcIiH28CcuPTGFgLOCC8RlW49GSQxdHwZP+I7CNg==
 
-"@types/node-telegram-bot-api@0.51.1":
-  version "0.51.1"
-  resolved "https://registry.yarnpkg.com/@types/node-telegram-bot-api/-/node-telegram-bot-api-0.51.1.tgz#adc9cf48e3dd3a35569c01de28a7c71aae40fc75"
-  integrity sha512-1gPuW543XUgJBUCsNx6x+iJ3DuHNfU6edtsLu/0J0jCfDvQtA511BmHiODt+qre09AVIUCpd+vaf02/URS3QZQ==
+"@types/node-telegram-bot-api@0.51.4":
+  version "0.51.4"
+  resolved "https://registry.yarnpkg.com/@types/node-telegram-bot-api/-/node-telegram-bot-api-0.51.4.tgz#9eec24da79ff549cdd29387b67ac4ba5ee4aee62"
+  integrity sha512-l9MTmTxRBbrcnvnYoQpSo17m7qmEUv6ToDGldb2OwROQp5L56D4U2jcBT46hJFhuTQ4AnUxVfabLmWZqtsFHXw==
   dependencies:
     "@types/node" "*"
     "@types/request" "*"
