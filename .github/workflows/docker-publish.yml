@@ -63,7 +63,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
 
       - name: release
-        uses: sekassel-research/actions-rancher-update@2.0.2
+        uses: d0whc3r/rancher-cli
         with:
           rancher_url: ${{ secrets.RANCHER_URL }}
           rancher_token: ${{ secrets.RANCHER_TOKEN }}

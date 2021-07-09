@@ -457,7 +457,7 @@ export class Binance extends BaseApi {
       logger.debug(`Calculate ROE for ${symbol} - Actual: ${actualRoe} - Last: ${lastRoe} - Next: ${nextRoe}`);
     }
     if (actualRoe > nextRoe && lastRoe > 0) {
-      newRoe = nextRoe;
+      newRoe = +nextRoe.toFixed(2);
     } else if (actualRoe > realStart && lastRoe === 0) {
       newRoe = 0.01;
       stopPrice = entryPrice;
