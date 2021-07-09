@@ -71,4 +71,4 @@ jobs:
           project_id: ${{ secrets.PROJECT_ID }}
           namespace: ${{ secrets.NAMESPACE }}
           deployment: ${{ secrets.DEPLOYMENT }}
-          docker_image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          docker_image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:master
