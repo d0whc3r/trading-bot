@@ -9,6 +9,7 @@ import { Config } from './config';
 import { dateConfig, LOG_PATH, logger } from './logger';
 import { parsePetition } from './parser';
 import type { SignalModel } from './types/signalModel.type';
+import { version } from '../package.json';
 
 process.on('uncaughtException', (error) => {
   logger.error({ title: 'Uncaught Exception', message: error.message, error });
@@ -61,5 +62,5 @@ app.use(
 );
 
 app.listen(Config.PORT, Config.HOST, () => {
-  logger.info(`[!] Server started at http://${Config.HOST}:${Config.PORT}${Config.MAIN_PATH}`);
+  logger.info(`[!] Server started at http://${Config.HOST}:${Config.PORT}${Config.MAIN_PATH} v${version}`);
 });
