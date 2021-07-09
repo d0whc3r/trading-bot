@@ -1,5 +1,5 @@
 diff --git a/node_modules/binance-api-node/index.d.ts b/node_modules/binance-api-node/index.d.ts
-index 0b20614..45dccc1 100644
+index bf7d7bc..3ef06a5 100644
 --- a/node_modules/binance-api-node/index.d.ts
 +++ b/node_modules/binance-api-node/index.d.ts
 @@ -10,7 +10,7 @@ declare module 'binance-api-node' {
@@ -47,7 +47,7 @@ index 0b20614..45dccc1 100644
      ISOLATED = "ISOLATED",
      CROSSED = "CROSSED"
    }
-@@ -576,7 +576,7 @@ declare module 'binance-api-node' {
+@@ -583,7 +583,7 @@ declare module 'binance-api-node' {
  
    export type ReconnectingWebSocketHandler = (options?: WebSocketCloseOptions) => void
  
@@ -56,7 +56,7 @@ index 0b20614..45dccc1 100644
      ONE_MINUTE = '1m',
      THREE_MINUTES = '3m',
      FIVE_MINUTES = '5m',
-@@ -594,17 +594,17 @@ declare module 'binance-api-node' {
+@@ -601,17 +601,17 @@ declare module 'binance-api-node' {
      ONE_MONTH = '1M',
    }
  
@@ -77,7 +77,7 @@ index 0b20614..45dccc1 100644
      SECOND = 'SECOND',
      MINUTE = 'MINUTE',
      DAY = 'DAY'
-@@ -617,7 +617,7 @@ declare module 'binance-api-node' {
+@@ -624,7 +624,7 @@ declare module 'binance-api-node' {
      limit: number
    }
  
@@ -86,7 +86,7 @@ index 0b20614..45dccc1 100644
      EXCHANGE_MAX_NUM_ORDERS = 'EXCHANGE_MAX_NUM_ORDERS',
      EXCHANGE_MAX_ALGO_ORDERS = 'EXCHANGE_MAX_ALGO_ORDERS'
    }
-@@ -627,7 +627,7 @@ declare module 'binance-api-node' {
+@@ -634,7 +634,7 @@ declare module 'binance-api-node' {
      limit: number
    }
  
@@ -95,7 +95,7 @@ index 0b20614..45dccc1 100644
      PRICE_FILTER = 'PRICE_FILTER',
      PERCENT_PRICE = 'PERCENT_PRICE',
      LOT_SIZE = 'LOT_SIZE',
-@@ -755,7 +755,7 @@ declare module 'binance-api-node' {
+@@ -762,7 +762,7 @@ declare module 'binance-api-node' {
      useServerTime?: boolean
    }
  
@@ -104,8 +104,8 @@ index 0b20614..45dccc1 100644
      NO_SIDE_EFFECT = 'NO_SIDE_EFFECT',
      MARGIN_BUY = 'MARGIN_BUY',
      AUTO_REPAY = 'AUTO_REPAY'
-@@ -788,19 +788,19 @@ declare module 'binance-api-node' {
-     fills?: OrderFill[]
+@@ -799,19 +799,19 @@ declare module 'binance-api-node' {
+     updateTime: number
    }
  
 -  export enum ListOrderStatus {
@@ -127,7 +127,7 @@ index 0b20614..45dccc1 100644
      CONTINGENCY_TYPE = 'OCO',
    }
  
-@@ -817,12 +817,12 @@ declare module 'binance-api-node' {
+@@ -828,12 +828,12 @@ declare module 'binance-api-node' {
    }
  
  
@@ -142,7 +142,7 @@ index 0b20614..45dccc1 100644
      CANCELED = 'CANCELED',
      EXPIRED = 'EXPIRED',
      FILLED = 'FILLED',
-@@ -832,7 +832,7 @@ declare module 'binance-api-node' {
+@@ -843,7 +843,7 @@ declare module 'binance-api-node' {
      REJECTED = 'REJECTED'
    }
  
@@ -151,7 +151,7 @@ index 0b20614..45dccc1 100644
    LIMIT = 'LIMIT',
    LIMIT_MAKER = 'LIMIT_MAKER',
    MARKET = 'MARKET',
-@@ -844,19 +844,19 @@ declare module 'binance-api-node' {
+@@ -855,19 +855,19 @@ declare module 'binance-api-node' {
    TRAILING_STOP_MARKET = 'TRAILING_STOP_MARKET'
    }
  
@@ -174,7 +174,7 @@ index 0b20614..45dccc1 100644
      ACCOUNT_CANNOT_SETTLE = 'ACCOUNT_CANNOT_SETTLE',
      ACCOUNT_INACTIVE = 'ACCOUNT_INACTIVE',
      DUPLICATE_ORDER = 'DUPLICATE_ORDER',
-@@ -870,7 +870,7 @@ declare module 'binance-api-node' {
+@@ -881,7 +881,7 @@ declare module 'binance-api-node' {
      UNKNOWN_ORDER = 'UNKNOWN_ORDER',
    }
  
@@ -183,7 +183,7 @@ index 0b20614..45dccc1 100644
      NEW = 'NEW',
      CANCELED ='CANCELED',
      REPLACED = 'REPLACED',
-@@ -977,7 +977,7 @@ declare module 'binance-api-node' {
+@@ -988,7 +988,7 @@ declare module 'binance-api-node' {
      }
    }
  
@@ -192,7 +192,7 @@ index 0b20614..45dccc1 100644
      ACCOUNT = 'account',
      BALANCE_UPDATE = 'balanceUpdate',
      OUTBOUND_ACCOUNT_POSITION = 'outboundAccountPosition',
-@@ -1323,7 +1323,7 @@ declare module 'binance-api-node' {
+@@ -1335,7 +1335,7 @@ declare module 'binance-api-node' {
      msg: string
    }
  
@@ -201,7 +201,7 @@ index 0b20614..45dccc1 100644
      TRANSFER = 'TRANSFER',
      WELCOME_BONUS = 'WELCOME_BONUS',
      REALIZED_PNL = 'REALIZED_PNL',
-@@ -1379,7 +1379,7 @@ declare module 'binance-api-node' {
+@@ -1391,7 +1391,7 @@ declare module 'binance-api-node' {
      totalNetAssetOfBtc: string
    }
  
@@ -210,7 +210,7 @@ index 0b20614..45dccc1 100644
      EXCESSIVE = 'EXCESSIVE',
      NORMAL = 'NORMAL',
      MARGIN_CALL = 'MARGIN_CALL',
-@@ -1414,7 +1414,7 @@ declare module 'binance-api-node' {
+@@ -1426,7 +1426,7 @@ declare module 'binance-api-node' {
      totalAsset: string
    }
  

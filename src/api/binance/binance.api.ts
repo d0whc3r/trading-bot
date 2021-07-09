@@ -181,6 +181,7 @@ export class Binance extends BaseApi {
       return null;
     }
     const { name, amount, price: itemPrice } = generic;
+    // eslint-disable-next-line sonarjs/no-nested-template-literals
     logger.info(`[!]${Config.BINANCE_DEMO ? ' DEMO' : ''} LONG[${name}/${itemPrice}]: ${usdt}$ -> ${amount}${price ? ` (${price}$)` : '(Market)'}`);
     if (Config.BINANCE_DEMO) {
       return null;
@@ -213,7 +214,9 @@ export class Binance extends BaseApi {
     const profitPrice = await this.setLimitOrder({ ticker, position: 'long', entryPrice, type: 'profit', create: !!result });
     this.telegram.sendMessage(
       '🚀 Long Alert',
+      // eslint-disable-next-line sonarjs/no-nested-template-literals
       `BINANCE:${ticker} (Futures)\n\nPrecio: $${entryPrice} (or less)${stopPrice ? `\nStop: $${stopPrice} (${this.stopPercent}%)` : ''}${
+        // eslint-disable-next-line sonarjs/no-nested-template-literals
         profitPrice ? `\nProfit: $${profitPrice} (${this.profitPercent}%)` : ''
       }`
     );
@@ -229,6 +232,7 @@ export class Binance extends BaseApi {
       return null;
     }
     const { name, amount, price: itemPrice } = generic;
+    // eslint-disable-next-line sonarjs/no-nested-template-literals
     logger.info(`[!]${Config.BINANCE_DEMO ? ' DEMO' : ''} SHORT[${name}/${itemPrice}]: ${usdt}$ -> ${amount}${price ? ` (${price}$)` : '(Market)'}`);
     if (Config.BINANCE_DEMO) {
       return null;
@@ -261,7 +265,9 @@ export class Binance extends BaseApi {
     const profitPrice = await this.setLimitOrder({ ticker, position: 'short', entryPrice, type: 'profit', create: !!result });
     this.telegram.sendMessage(
       '🩸 Short Alert',
+      // eslint-disable-next-line sonarjs/no-nested-template-literals
       `BINANCE:${ticker} (Futures)\n\nPrecio: $${+entryPrice} (or more)${stopPrice ? `\nStop: $${stopPrice} (${this.stopPercent}%)` : ''}${
+        // eslint-disable-next-line sonarjs/no-nested-template-literals
         profitPrice ? `\nProfit: $${profitPrice} (${this.profitPercent}%)` : ''
       }`
     );
@@ -367,7 +373,7 @@ export class Binance extends BaseApi {
     await this.exchange.ws.futuresUser((msg) => {
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
-      const { symbol, orderType, executionType, positionSide, orderStatus, price, side } = msg;
+      const { symbol, orderType, executionType, positionSide, orderStatus, price, side, closePosition } = msg;
       if (
         symbol &&
         orderType &&
@@ -390,13 +396,7 @@ export class Binance extends BaseApi {
         ((side === OrderSide.BUY && positionSide === 'LONG') || (side === OrderSide.SELL && positionSide === 'SHORT'))
       ) {
         this.initSockPriceTicker(symbol, price, positionSide);
-      } else if (
-        symbol &&
-        orderType &&
-        orderStatus &&
-        [OrderType.STOP_MARKET, OrderType.TAKE_PROFIT_MARKET].includes(orderType) &&
-        orderStatus === OrderStatus.FILLED
-      ) {
+      } else if ((symbol && orderType && closePosition) || [OrderType.STOP_MARKET, OrderType.TAKE_PROFIT_MARKET].includes(orderType)) {
         this.stopSockPriceTicker(symbol);
       } else {
         logger.debug(msg);
