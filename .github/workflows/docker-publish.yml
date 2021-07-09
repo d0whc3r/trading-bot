@@ -61,10 +61,9 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-  release:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: sekassel-research/actions-rancher-update@2.0.2
+
+      - name: release
+        uses: sekassel-research/actions-rancher-update@2.0.2
         with:
           rancher_url: ${{ secrets.RANCHER_URL }}
           rancher_token: ${{ secrets.RANCHER_TOKEN }}
