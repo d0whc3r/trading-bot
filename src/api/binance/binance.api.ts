@@ -139,12 +139,13 @@ export class Binance extends BaseApi {
     }
     const isStop = type === 'stop';
     const calc = isStop ? Config.BINANCE_STOP_LOSS : Config.BINANCE_TAKE_PROFIT;
-    const diff = (+realPrice * +calc) / 100;
-    const priceDecimals = +(await this.getPriceDecimals(ticker));
+    const diff = (realPrice * calc) / 100;
+    const priceDecimals = await this.getPriceDecimals(ticker);
     const prices = [realPrice - diff, realPrice + diff].map((p) => Math.floor(p * 10 ** priceDecimals) / 10 ** priceDecimals);
     const first = isStop ? 0 : 1;
     const second = isStop ? 1 : 0;
-    return position.toLowerCase() === 'long' ? prices[+first] : prices[+second];
+    const result = position === 'long' ? prices[+first] : prices[+second];
+    return result.toString();
   }
 
   protected async setLimitOrder(params: LimitOrderParams) {
