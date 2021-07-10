@@ -52,7 +52,7 @@
     "node-telegram-bot-api": "0.53.0",
     "winston": "3.3.3",
     "winston-daily-rotate-file": "4.5.5",
-    "ws": "7.5.2"
+    "ws": "7.5.3"
   },
   "devDependencies": {
     "@babel/core": "7.14.6",
