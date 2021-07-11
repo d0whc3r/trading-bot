@@ -38,7 +38,7 @@
     "clean:install": "rimraf node_modules",
     "clean": "run-p clean:build clean:install",
     "ci": "run-s clean && rm -fr node_modules && yarn",
-    "semantic-release": "semantic-release"
+    "semantic-release": "HUSKY=0 semantic-release"
   },
   "dependencies": {
     "axios": "0.21.1",
