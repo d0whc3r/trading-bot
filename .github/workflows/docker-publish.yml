@@ -42,14 +42,13 @@ jobs:
       - name: Build
         run: yarn build
 
-      - name: Release
-        if: github.ref == 'refs/heads/master'
-        run: yarn semantic-release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-          GIT_CREDENTIALS: ${{ secrets.GIT_CREDENTIALS }}
-#          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+#      - name: Release
+#        if: github.ref == 'refs/heads/master'
+#        run: yarn semantic-release
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+#          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+#          GIT_CREDENTIALS: ${{ secrets.GIT_CREDENTIALS }}
 
       # Login against a Docker registry except on PR
       # https://github.com/docker/login-action
