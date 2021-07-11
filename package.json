@@ -2,10 +2,10 @@
   "name": "@d0whc3r/tradingview-bot",
   "version": "0.0.2",
   "private": true,
-  "description": "Leonardo monorepo",
+  "description": "Tradingview bot",
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@gitlab.com:d0whc3r/tradingview-bot.git"
+    "url": "git+ssh://git@github:d0whc3r/trading-bot.git"
   },
   "author": "d0whc3r",
   "license": "ISC",
