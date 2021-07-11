@@ -34,6 +34,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
+      - name: Automated Version Bump
+        uses: phips28/gh-action-bump-version@master
+        with:
+          tag-prefix: ''
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       # Login against a Docker registry except on PR
       # https://github.com/docker/login-action
       - name: Log into registry ${{ env.REGISTRY }}
