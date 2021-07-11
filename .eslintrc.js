@@ -2,7 +2,7 @@ module.exports = {
   root: true,
   settings: {
     'import/parsers': {
-      'babel-eslint': ['.js', '.jsx'],
+      '@babel/eslint-parser': ['.js', '.jsx'],
       '@typescript-eslint/parser': ['.ts', '.tsx']
     },
     // 'import/resolver': {
@@ -37,7 +37,7 @@ module.exports = {
   overrides: [
     {
       files: ['*.js', '*.jsx'],
-      parser: 'babel-eslint'
+      parser: '@babel/eslint-parser'
     },
     {
       files: ['rollup.config.js', 'jest.config.js'],

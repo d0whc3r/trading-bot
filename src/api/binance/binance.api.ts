@@ -127,24 +127,28 @@ export class Binance extends BaseApi {
     profit = Config.BINANCE_TAKE_PROFIT,
     stop = Config.BINANCE_STOP_LOSS
   }: LimitOrderParams) {
-    if ((type === 'stop' && !stop) || (type === 'profit' && !profit)) {
+    if ((type === 'stop' && !Number.isFinite(stop)) || (type === 'profit' && !Number.isFinite(profit))) {
       return null;
     }
-    let realPrice = entryPrice;
-    if (!realPrice) {
+    let realPrice = Number(entryPrice) || undefined;
+    if (!Number.isFinite(realPrice)) {
       realPrice = await this.getPrice(ticker);
     }
-    if (!realPrice) {
+    if (!Number.isFinite(realPrice) || realPrice === undefined) {
       return null;
     }
     const isStop = type === 'stop';
-    const calc = isStop ? Config.BINANCE_STOP_LOSS : Config.BINANCE_TAKE_PROFIT;
+    const calc = isStop ? stop : profit;
+    if (!Number.isFinite(calc)) {
+      logger.error({ title: `Unknown stop or profit number for ${ticker}`, stop, profit });
+      return null;
+    }
     const diff = (realPrice * calc) / 100;
     const priceDecimals = await this.getPriceDecimals(ticker);
     const prices = [realPrice - diff, realPrice + diff].map((p) => Math.floor(p * 10 ** priceDecimals) / 10 ** priceDecimals);
     const first = isStop ? 0 : 1;
     const second = isStop ? 1 : 0;
-    const result = position === 'long' ? prices[+first] : prices[+second];
+    const result = position.toLowerCase() === 'long' ? prices[+first] : prices[+second];
     return result.toString();
   }
 
@@ -152,9 +156,10 @@ export class Binance extends BaseApi {
     const { ticker, position, type, entryPrice, create = true } = params;
     const symbol = this.cleanTicker(ticker);
     const limitPrice = await this.calculateLimit(params);
+    logger.debug({ title: 'Calculated limitPrice', limitPrice, params });
     const positionSide = position.toUpperCase();
-    const side = position === 'long' ? OrderSide.SELL : OrderSide.BUY;
-    const orderType = type === 'stop' ? OrderType.STOP_MARKET : OrderType.TAKE_PROFIT_MARKET;
+    const side = position.toLowerCase() === 'long' ? OrderSide.SELL : OrderSide.BUY;
+    const orderType = type.toLowerCase() === 'stop' ? OrderType.STOP_MARKET : OrderType.TAKE_PROFIT_MARKET;
     if (create && limitPrice) {
       try {
         logger.debug({ title: `${symbol} Add limit order for ${type} at ${limitPrice} based on entry price: ${entryPrice || 'Market'}` });
@@ -453,7 +458,7 @@ export class Binance extends BaseApi {
     const nextRoe = lastRoe + realStep;
     let stopPrice = marketPrice;
     let newRoe = 0;
-    if (time % 1000 === 0) {
+    if (time % 60000 === 0) {
       logger.debug(`Calculate ROE for ${symbol} - Actual: ${actualRoe} - Last: ${lastRoe} - Next: ${nextRoe}`);
     }
     if (actualRoe > nextRoe && lastRoe > 0) {
