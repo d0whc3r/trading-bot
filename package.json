@@ -5,7 +5,7 @@
   "description": "Tradingview bot",
   "repository": {
     "type": "git",
-    "url": "git@github.com:d0whc3r/trading-bot.git"
+    "url": "git://git@github.com:d0whc3r/trading-bot.git"
   },
   "author": "d0whc3r",
   "license": "ISC",
