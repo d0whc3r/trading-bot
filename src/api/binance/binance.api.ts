@@ -411,6 +411,7 @@ export class Binance extends BaseApi {
 
   public stopSockPriceTicker(symbol: string) {
     if (this.openSockets.has(symbol)) {
+      logger.info(`Close socket ticker for ${symbol}`);
       const sock = this.openSockets.get(symbol);
       if (sock) {
         sock();
