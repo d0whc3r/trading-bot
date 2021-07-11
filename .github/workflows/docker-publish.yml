@@ -33,16 +33,15 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
-        with:
-          ref: ${{ github.ref }}
-          fetch-depth: 0
 
-      - name: Automated Version Bump
-        uses: phips28/gh-action-bump-version@master
-        with:
-          tag-prefix: ''
+      - name: Release
+        if: github.ref == 'refs/heads/master' && matrix.node-version == '14.x'
+        run: yarn semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GIT_CREDENTIALS: ${{ secrets.GIT_CREDENTIALS }}
+#          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       # Login against a Docker registry except on PR
       # https://github.com/docker/login-action
@@ -72,7 +71,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
-      - name: release
+      - name: Deploy
         uses: sekassel-research/actions-rancher-update@2.0.2
         with:
           rancher_url: ${{ secrets.RANCHER_URL }}

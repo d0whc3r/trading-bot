@@ -1,25 +1,22 @@
-// import typescript from 'rollup-plugin-typescript2';
 import esbuild from 'rollup-plugin-esbuild';
 import autoExternal from 'rollup-plugin-auto-external';
 import json from '@rollup/plugin-json';
 import nodeResolve from '@rollup/plugin-node-resolve';
-// import builtinModules from 'builtin-modules';
+import builtinModules from 'builtin-modules';
 import globals from 'rollup-plugin-node-globals';
 import builtins from 'rollup-plugin-node-builtins';
-import nodePolyfills from 'rollup-plugin-node-polyfills';
 import commonjs from '@rollup/plugin-commonjs';
-import { terser } from 'rollup-plugin-terser';
 import babel from '@rollup/plugin-babel';
 
 export const isProd = process.env.NODE_ENV === 'production';
 
-const extensions = ['.js', '.jsx', '.ts', '.tsx', '.mjs', '.node'];
+const extensions = ['.js', '.jsx', '.ts', '.tsx', '.mjs', '.node', '.json'];
 export const resolveOptions = {
-  mainFields: ['collection:main', 'jsnext:main', 'es2020', 'es2018', 'es2017', 'es2015', 'module', 'main'],
+  mainFields: ['collection:main', 'es2020', 'es2018', 'es2017', 'es2015', 'module', 'main'],
   preferBuiltins: false,
   extensions,
   modulesOnly: false,
-  browser: true
+  browser: false
 };
 export const babelConfig = {
   sourceType: 'module',
@@ -91,43 +88,43 @@ export const plugins = {
   babel: babel(babelConfig),
   replace: undefined,
   commonjs: commonjs(),
-  globals: globals(),
-  polyfills: nodePolyfills()
+  globals: globals()
+  // polyfills: nodePolyfills()
 };
-const pluginsMin = {
-  ...plugins,
-  terser: isProd && terser()
-};
+// const pluginsMin = {
+//   ...plugins,
+//   terser: isProd && terser()
+// };
 // pluginsMin.resolve = nodePolyfills();
-pluginsMin.resolve = nodeResolve({ ...resolveOptions, browser: true });
-pluginsMin.babel = babel(babelConfigMin);
-export { pluginsMin };
-// export const external = [...builtinModules];
-export const external = [];
+// pluginsMin.resolve = nodeResolve({ ...resolveOptions, browser: true });
+// pluginsMin.babel = babel(babelConfigMin);
+// export { pluginsMin };
+export const external = [...builtinModules];
+// export const external = [];
 
 export function parseName(name) {
   return name
-      .replace('@', '')
-      .replace('/', '-')
-      .split('-')
-      .map((x, i) => (i > 0 ? x[0].toUpperCase() + x.slice(1) : x))
-      .join('');
+    .replace('@', '')
+    .replace('/', '-')
+    .split('-')
+    .map((x, i) => (i > 0 ? x[0].toUpperCase() + x.slice(1) : x))
+    .join('');
 }
 
 export default (
-    pkg,
-    {
-      /** @type {import("rollup").InputOptions } */
-      options,
-      /** @type {import("rollup").InputOptions } */
-      optionsMin,
-      /** @type {import("@rollup/plugin-babel").RollupBabelInputPluginOptions } */
-      babelOptions,
-      /** @type {import("@rollup/plugin-babel").RollupBabelInputPluginOptions } */
-      babelOptionsMin,
-      /** @type {import("rollup").WatcherOptions } */
-      watch
-    } = {}
+  pkg,
+  {
+    /** @type {import("rollup").InputOptions } */
+    options,
+    /** @type {import("rollup").InputOptions } */
+    optionsMin,
+    /** @type {import("@rollup/plugin-babel").RollupBabelInputPluginOptions } */
+    babelOptions,
+    /** @type {import("@rollup/plugin-babel").RollupBabelInputPluginOptions } */
+    babelOptionsMin,
+    /** @type {import("rollup").WatcherOptions } */
+    watch
+  } = {}
 ) => {
   const banner = `/*
  * ${pkg.name}
@@ -176,14 +173,14 @@ export default (
 
   if (outputMin.length) {
     result.push(
-        /** @type {import("rollup").InputOptions } */ {
-          ...baseBuild,
-          external: [],
-          output: outputMin,
-          watch,
-          ...optionsMin,
-          plugins: Object.values(optionsMin?.plugins || pluginsMin)
-        }
+      /** @type {import("rollup").InputOptions } */ {
+        ...baseBuild,
+        external: [],
+        output: outputMin,
+        watch,
+        ...optionsMin,
+        plugins: Object.values(optionsMin?.plugins || pluginsMin)
+      }
     );
   }
 

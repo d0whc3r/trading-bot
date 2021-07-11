@@ -4,12 +4,14 @@ import cors from 'cors';
 import express, { Request } from 'express';
 import expressWinston from 'express-winston';
 import path from 'path';
-import winston from 'winston';
+import { format } from 'winston';
 import { Config } from './config';
 import { dateConfig, LOG_PATH, logger } from './logger';
 import { parsePetition } from './parser';
 import type { SignalModel } from './types/signalModel.type';
-import { version } from '../package.json';
+import DailyRotateFile = require('winston-daily-rotate-file');
+// eslint-disable-next-line @typescript-eslint/no-var-requires,@typescript-eslint/no-unsafe-assignment
+const { version } = require('../package.json');
 
 process.on('uncaughtException', (error) => {
   logger.error({ title: 'Uncaught Exception', message: error.message, error });
@@ -24,12 +26,12 @@ app.use(
   expressWinston.logger({
     transports: [
       // new winston.transports.Console(),
-      new winston.transports.DailyRotateFile({
+      new DailyRotateFile({
         filename: path.join(LOG_PATH, 'server-%DATE%.log'),
         ...dateConfig
       })
     ],
-    format: winston.format.combine(winston.format.colorize(), winston.format.json()),
+    format: format.combine(format.colorize(), format.json()),
     meta: true,
     msg: 'HTTP[{{req.method}}] {{req.url}} => {{req.body}}',
     expressFormat: true,
@@ -52,15 +54,16 @@ app.post(Config.MAIN_PATH, (req: Request<any, any, SignalModel>, res) => {
 app.use(
   expressWinston.errorLogger({
     transports: [
-      new winston.transports.DailyRotateFile({
+      new DailyRotateFile({
         filename: path.join(LOG_PATH, 'server-error-%DATE%.log'),
         ...dateConfig
       })
     ],
-    format: winston.format.combine(winston.format.colorize(), winston.format.json())
+    format: format.combine(format.colorize(), format.json())
   })
 );
 
 app.listen(Config.PORT, Config.HOST, () => {
+  // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
   logger.info(`[!] Server started at http://${Config.HOST}:${Config.PORT}${Config.MAIN_PATH} v${version}`);
 });

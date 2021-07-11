@@ -2,9 +2,9 @@
 // @ts-ignore
 import logdnaWinston from 'logdna-winston';
 import path from 'path';
-import winston from 'winston';
-import 'winston-daily-rotate-file';
+import { createLogger, format, transports } from 'winston';
 import { Config } from './config';
+import DailyRotateFile = require('winston-daily-rotate-file');
 
 export const LOG_PATH = 'logs';
 
@@ -17,27 +17,27 @@ export const dateConfig = {
 
 export const transportFileDebug =
   !Config.IS_TEST &&
-  new winston.transports.DailyRotateFile({
+  new DailyRotateFile({
     filename: path.join(LOG_PATH, 'debug-%DATE%.log'),
     level: 'debug',
     ...dateConfig
   });
 export const transportFileError =
   !Config.IS_TEST &&
-  new winston.transports.DailyRotateFile({
+  new DailyRotateFile({
     filename: path.join(LOG_PATH, 'error-%DATE%.log'),
     level: 'error',
     ...dateConfig
   });
 export const transportFile =
   !Config.IS_TEST &&
-  new winston.transports.DailyRotateFile({
+  new DailyRotateFile({
     filename: path.join(LOG_PATH, 'app-%DATE%.log'),
     ...dateConfig
   });
-export const transportConsole = new winston.transports.Console({
+export const transportConsole = new transports.Console({
   // format: winston.format.simple(),
-  format: winston.format.combine(winston.format.timestamp(), winston.format.json()),
+  format: format.combine(format.timestamp(), format.json()),
   level: Config.IS_TEST ? 'debug' : 'info'
 });
 // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
@@ -55,9 +55,9 @@ export const transportLogdnaWinston =
     handleExceptions: true
   });
 
-const logger = winston.createLogger({
+const logger = createLogger({
   level: 'debug',
-  format: winston.format.combine(winston.format.timestamp(), winston.format.json()),
+  format: format.combine(format.timestamp(), format.json()),
   transports: [transportFileDebug, transportFileError, transportFile, transportLogdnaWinston].filter(Boolean)
 });
 
