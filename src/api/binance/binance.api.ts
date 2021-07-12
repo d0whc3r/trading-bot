@@ -403,7 +403,7 @@ export class Binance extends BaseApi {
       ) {
         logger.debug({ title: 'Init sock price trigger', msg });
         this.initSockPriceTicker(symbol, price, positionSide);
-      } else if ((symbol && orderType && closePosition) || [OrderType.STOP_MARKET, OrderType.TAKE_PROFIT_MARKET].includes(orderType)) {
+      } else if (symbol && orderType && (closePosition || [OrderType.STOP_MARKET, OrderType.TAKE_PROFIT_MARKET].includes(orderType))) {
         logger.debug({ title: 'Stop stock price trigger', msg });
         this.stopSockPriceTicker(symbol);
       } else {
