@@ -387,6 +387,7 @@ export class Binance extends BaseApi {
         [OrderType.LIMIT, OrderType.MARKET].includes(orderType) &&
         executionType === ExecutionType.CANCELED
       ) {
+        logger.debug({ title: 'Close and stop trigger', msg });
         // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
         logger.info(`Close remaining open orders of closed order ${symbol}, ${orderType}, ${executionType}, ${positionSide}`);
         void this.closeOpenOrders(symbol, positionSide);
@@ -400,8 +401,10 @@ export class Binance extends BaseApi {
         [OrderStatus.FILLED, OrderStatus.PARTIALLY_FILLED].includes(orderStatus) &&
         ((side === OrderSide.BUY && positionSide === 'LONG') || (side === OrderSide.SELL && positionSide === 'SHORT'))
       ) {
+        logger.debug({ title: 'Init sock price trigger', msg });
         this.initSockPriceTicker(symbol, price, positionSide);
       } else if ((symbol && orderType && closePosition) || [OrderType.STOP_MARKET, OrderType.TAKE_PROFIT_MARKET].includes(orderType)) {
+        logger.debug({ title: 'Stop stock price trigger', msg });
         this.stopSockPriceTicker(symbol);
       } else {
         logger.debug(msg);
