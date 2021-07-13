@@ -404,10 +404,12 @@ export class Binance extends BaseApi {
         logger.debug({ title: 'Init sock price trigger', msg });
         this.initSockPriceTicker(symbol, price, positionSide);
       } else if (
-        symbol &&
-        orderType &&
-        (closePosition || [OrderType.STOP_MARKET, OrderType.TAKE_PROFIT_MARKET].includes(orderType)) &&
-        [OrderStatus.PARTIALLY_FILLED, OrderStatus.FILLED].includes(orderStatus)
+        (symbol &&
+          orderType &&
+          (closePosition || [OrderType.STOP_MARKET, OrderType.TAKE_PROFIT_MARKET].includes(orderType)) &&
+          [/*OrderStatus.PARTIALLY_FILLED,*/ OrderStatus.FILLED].includes(orderStatus)) ||
+        ([OrderStatus.FILLED /*, OrderStatus.PARTIALLY_FILLED*/].includes(orderStatus) &&
+          ((side === OrderSide.BUY && positionSide === 'SHORT') || (side === OrderSide.SELL && positionSide === 'LONG')))
       ) {
         logger.debug({ title: 'Stop stock price trigger', msg });
         this.stopSockPriceTicker(symbol);
@@ -444,8 +446,8 @@ export class Binance extends BaseApi {
       const sock = this.exchange.ws.futuresCustomSubStream(`${symbol.toLowerCase()}@markPrice@1s`, (info: WSPriceUpdate) => {
         // logger.info(info);
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        const { s: name, p: markPrice, E: time } = info;
-        void this.calculateDynamicSl(name, +markPrice, time);
+        const { s: name, p: markPrice, P: settlePrice, i: indexPrice, E: time } = info;
+        void this.calculateDynamicSl(name, { markPrice: +markPrice, settlePrice: +settlePrice, indexPrice: +indexPrice }, time);
       });
       this.openSockets.set(symbol, sock);
     }
@@ -456,19 +458,24 @@ export class Binance extends BaseApi {
     return +(((side * (markPrice - entryPrice)) / entryPrice) * 100).toFixed(2);
   }
 
-  private async calculateDynamicSl(symbol: string, marketPrice: number, time: number) {
+  private async calculateDynamicSl(symbol: string, priceInfo: { markPrice: number; settlePrice: number; indexPrice: number }, time: number) {
     if (!this.actualOrders.has(symbol) || !this.actualOrders.get(symbol)) {
       return;
     }
+    const { markPrice, indexPrice, settlePrice } = priceInfo;
     const { entryPrice, lastRoe, positionSide } = this.actualOrders.get(symbol)!;
     const realStart = +(Config.BINANCE_DYNAMIC_STOP_START / Config.BINANCE_LEVERAGE);
     const realStep = +(Config.BINANCE_DYNAMIC_STOP_STEP / Config.BINANCE_LEVERAGE);
-    const actualRoe = this.calculateRoe(entryPrice, marketPrice, positionSide);
+    const actualRoe = this.calculateRoe(entryPrice, markPrice, positionSide);
     const nextRoe = lastRoe + realStep;
-    let stopPrice = marketPrice;
+    let stopPrice = markPrice;
     let newRoe = 0;
     if (time % 60000 === 0) {
-      logger.debug(`Calculate ROE for ${symbol} - Actual: ${actualRoe} - Last: ${lastRoe} - Next: ${nextRoe}`);
+      logger.debug(
+        `Calculate ROE for ${symbol} - Actual: ${actualRoe} - Last: ${lastRoe} - Next: ${nextRoe}` +
+          ` -- Entry: ${entryPrice} - Position: ${positionSide}` +
+          ` -- MarketPrices: ${markPrice} - SettlePrice: ${settlePrice} - IndexPrice: ${indexPrice}`
+      );
     }
     if (actualRoe > nextRoe && lastRoe > 0) {
       newRoe = nextRoe;
