@@ -162,7 +162,7 @@ export class Binance extends BaseApi {
     const orderType = type.toLowerCase() === 'stop' ? OrderType.STOP_MARKET : OrderType.TAKE_PROFIT_MARKET;
     if (create && limitPrice) {
       try {
-        logger.debug({ title: `${symbol} Add limit order for ${type} at ${limitPrice} based on entry price: ${entryPrice || 'Market'}` });
+        logger.info({ title: `${symbol} Add limit order for ${type} at ${limitPrice} based on entry price: ${entryPrice || 'Market'}` });
         await this.exchange.futuresOrder({
           symbol,
           positionSide,
@@ -176,6 +176,8 @@ export class Binance extends BaseApi {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         logger.error({ title: 'Error in limit order', type, position, limitPrice, error });
       }
+    } else {
+      logger.error({ title: 'Cannot set limit order', create, limitPrice });
     }
     return limitPrice;
   }
