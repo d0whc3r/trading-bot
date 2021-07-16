@@ -237,7 +237,7 @@ export class Binance extends BaseApi {
       `Entry Price: ${entryPrice}\n` +
         `Stop Loss: ${stopPrice || ''}\n` +
         `Take Profit: ${profitPrice || ''} - ${profitPrice2 || ''}\n` +
-        `Leverage: ${Config.BINANCE_MARGIN_TYPE.toLowerCase()} ${Config.BINANCE_LEVERAGE}`
+        `Leverage: ${Config.BINANCE_MARGIN_TYPE.toLowerCase()} x${Config.BINANCE_LEVERAGE}`
     );
     logger.debug({ title: 'LONG RESULT ACTION', result });
 
@@ -294,7 +294,7 @@ export class Binance extends BaseApi {
       `Entry Price: ${entryPrice}\n` +
         `Stop Loss: ${stopPrice || ''}\n` +
         `Take Profit: ${profitPrice || ''} - ${profitPrice2 || ''}\n` +
-        `Leverage: ${Config.BINANCE_MARGIN_TYPE.toLowerCase()} ${Config.BINANCE_LEVERAGE}`
+        `Leverage: ${Config.BINANCE_MARGIN_TYPE.toLowerCase()} x${Config.BINANCE_LEVERAGE}`
     );
     logger.debug({ title: 'SHORT RESULT ACTION', result });
     await this.closeOpenOrders(ticker, 'long');
