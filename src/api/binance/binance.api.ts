@@ -183,7 +183,7 @@ export class Binance extends BaseApi {
   }
 
   private parsedTicker(ticker: string) {
-    const regex = new RegExp('.*USDT', 'i');
+    const regex = new RegExp('(.*)USDT(?:PERP)?', 'i');
     const ex = regex.exec(ticker);
     return ex ? ex[1] + '/USDT' : '';
   }
