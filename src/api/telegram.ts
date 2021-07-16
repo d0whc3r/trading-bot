@@ -13,9 +13,10 @@ export class Telegram {
     }
   }
 
-  sendMessage(title: string, content: string) {
+  sendMessage(title: string, content = '') {
     if (this.channelId) {
-      const msg = title + '\n\n' + content;
+      const ct = content ? '\n\n' + content : '';
+      const msg = title + ct;
       this.telegramBot?.sendMessage(this.channelId, msg);
     }
   }

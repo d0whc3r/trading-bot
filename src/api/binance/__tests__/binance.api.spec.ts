@@ -1,5 +1,5 @@
 import { OrderType } from 'binance-api-node';
-import { Binance } from '../binance/binance.api';
+import { Binance } from '../binance.api';
 
 describe('Binance api', () => {
   let ticker: string;
@@ -48,4 +48,17 @@ describe('Binance api', () => {
   //     done();
   //   }, 100000);
   // });
+
+  describe('Calculate limit', () => {
+    it('Calculate stop for long', async () => {
+      exchange.getPriceDecimals = jest.fn().mockResolvedValue(4);
+      const limit = await exchange.calculateLimit({ ticker, create: true, position: 'long', type: 'stop', stop: 0.5, entryPrice: 0.3 });
+      expect(limit).not.toBeNil().toBe('0.2985');
+    });
+    it('Calculate stop for short', async () => {
+      exchange.getPriceDecimals = jest.fn().mockResolvedValue(4);
+      const limit = await exchange.calculateLimit({ ticker, create: true, position: 'short', type: 'stop', stop: 0.5, entryPrice: 0.3 });
+      expect(limit).not.toBeNil().toBe('0.3015');
+    });
+  });
 });
