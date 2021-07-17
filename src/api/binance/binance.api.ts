@@ -523,7 +523,7 @@ export class Binance extends BaseApi {
       );
       this.actualOrders.set(symbol, { ...this.actualOrders.get(symbol)!, lastRoe: nextRoe });
       await this.closeOpenOrders(symbol, positionSide, OrderType.STOP_MARKET);
-      await this.setLimitOrder({ ticker: symbol, type: 'stop', entryPrice: stopPrice, position: positionSide, create: true, stop: +newRoe });
+      await this.setLimitOrder({ ticker: symbol, type: 'stop', entryPrice: stopPrice, position: positionSide, create: true, stop: +newRoe * 100 });
     }
   }
 }
