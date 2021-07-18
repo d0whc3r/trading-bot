@@ -513,13 +513,13 @@ export class Binance extends BaseApi {
     if (actualRoe > nextRoe && lastRoe > 0) {
       newRoe = nextRoe;
     } else if (actualRoe > realStart && lastRoe === 0) {
-      newRoe = 0.01;
+      newRoe = Config.BINANCE_DYNAMIC_BE;
       stopPrice = entryPrice;
     }
 
     if (newRoe) {
       logger.info(
-        `Calculated new ROE for ${symbol} to: ${newRoe}% (Actual: ${actualRoe} - Start: ${realStart} - Last: ${lastRoe} - Next: ${nextRoe})`
+        `Calculated new ROE for ${symbol} (${positionSide}) to: ${newRoe}% (Actual: ${actualRoe} - Start: ${realStart} - Last: ${lastRoe} - Next: ${nextRoe} - EntryPrice: ${entryPrice} - Market: ${markPrice})`
       );
       this.actualOrders.set(symbol, { ...this.actualOrders.get(symbol)!, lastRoe: nextRoe });
       await this.closeOpenOrders(symbol, positionSide, OrderType.STOP_MARKET);

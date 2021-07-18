@@ -23,6 +23,7 @@ export class Config {
   public static BINANCE_DYNAMIC_STOP = parseBool(process.env.BINANCE_DYNAMIC_STOP || true);
   public static BINANCE_DYNAMIC_STOP_START = +(process.env.BINANCE_DYNAMIC_STOP_START || 5);
   public static BINANCE_DYNAMIC_STOP_STEP = +(process.env.BINANCE_DYNAMIC_STOP_STEP || 2);
+  public static BINANCE_DYNAMIC_BE = +(process.env.BINANCE_DYNAMIC_BE || 0.01);
   public static TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
   public static TELEGRAM_CHANNEL_ID = process.env.TELEGRAM_CHANNEL_ID;
 }
