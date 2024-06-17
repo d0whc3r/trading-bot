@@ -54,7 +54,7 @@
     "node-telegram-bot-api": "0.53.0",
     "winston": "3.3.3",
     "winston-daily-rotate-file": "4.5.5",
-    "ws": "7.5.3"
+    "ws": "7.5.10"
   },
   "devDependencies": {
     "@babel/core": "7.14.6",
@@ -84,7 +84,7 @@
     "@types/node-telegram-bot-api": "0.51.4",
     "@types/rollup-plugin-node-builtins": "2.1.2",
     "@types/rollup-plugin-node-globals": "1.4.1",
-    "@types/ws": "7.4.6",
+    "@types/ws": "7.4.7",
     "@typescript-eslint/eslint-plugin": "4.28.2",
     "@typescript-eslint/parser": "4.28.2",
     "babel-jest": "27.0.6",
